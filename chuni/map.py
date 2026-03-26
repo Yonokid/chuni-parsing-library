@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from global_utils import get_text_element
+from libs.global_utils import get_text_element
 
 
 def parse_map(file: str) -> dict:

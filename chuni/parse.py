@@ -2,11 +2,11 @@ import json
 import os
 import sys
 
-from chara import copy_chara_image, parse_chara
-from event import copy_ddsBanner, copy_eventBanner, parse_event
-from map import copy_ddsMap, parse_map
-from movie import copy_movie, parse_movie
-from music import copy_cueFile, copy_jacket, parse_music
+from chuni.chara import copy_chara_image, parse_chara
+from chuni.event import copy_ddsBanner, copy_eventBanner, parse_event
+from chuni.map import copy_ddsMap, parse_map
+from chuni.movie import copy_movie, parse_movie
+from chuni.music import copy_cueFile, copy_jacket, parse_music
 from present import parse_present
 from skill import parse_skill
 from trophy import parse_trophy
