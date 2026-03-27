@@ -47,9 +47,14 @@ def parse_title(file: str) -> dict:
             raise Exception(f"Unknown unlock type: {json_data['unlock_type']}, {json_data['unlock_category']}")
 
         if json_data["unlock_type"] == "MUSIC":
-            json_data["param"] = int(get_text_element(root, "relConds/condition0/musicId/id"))
-        else:
-            json_data["param"] = int(get_text_element(root, "relConds/condition0/param"))
+            json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/musicId/id"))
+        elif json_data["unlock_type"] == "CHARA_KAKUSEI" or json_data["unlock_type"] == "CHARA_KAISU":
+            json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/charaId/id"))
+        elif json_data["unlock_type"] == "MAP_CHARA_KAKUSEI" or json_data["unlock_type"] == "MAP_COMPLETE":
+            json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/mapId/id"))
+        elif json_data["unlock_type"] == "DANNI":
+            json_data["reference_id"] = get_text_element(root, "relConds/condition0/gradeId")
+        json_data["param"] = int(get_text_element(root, "relConds/condition0/param"))
 
         try:
             json_data["normText"] = get_text_element(root, "normText")
