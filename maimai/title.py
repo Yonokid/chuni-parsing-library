@@ -29,6 +29,13 @@ unlock_types = {
     "NPC_OTOMODACHI_N_WIN",
     "ZENKOKU_OTOMODACHI_N_REN_WIN",
     "MAP_COMPLETE",
+    "TRACK_SKIP",
+    "PARTNER",
+    "TOTAL_CHARA_KAKUSEI",
+    "MUSIC_GENRE_SELECTED",
+    "TITLESET_DP",
+    "MATCHING_FOR_TITLESETPLAYER",
+    "FULLCOMBO_COUNT"
 }
 def parse_title(file: str) -> dict:
     with open(file, "r", encoding="utf-8") as xml_file:
@@ -44,9 +51,9 @@ def parse_title(file: str) -> dict:
         json_data["unlock_category"] = get_text_element(root, "relConds/condition0/Category")
         json_data["unlock_type"] = get_text_element(root, f"relConds/condition0/kind{json_data['unlock_category']}")
         if json_data["unlock_type"] not in unlock_types:
-            raise Exception(f"Unknown unlock type: {json_data['unlock_type']}, {json_data['unlock_category']}")
+            raise Exception(f"Unknown unlock type: {json_data['unlock_type']}, {json_data['unlock_category']}, {json_data["id"]}")
 
-        if json_data["unlock_type"] == "MUSIC":
+        if json_data["unlock_type"] == "MUSIC" or json_data["unlock_type"] == "TRACK_SKIP":
             json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/musicId/id"))
         elif json_data["unlock_type"] == "CHARA_KAKUSEI" or json_data["unlock_type"] == "CHARA_KAISU":
             json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/charaId/id"))
@@ -54,6 +61,10 @@ def parse_title(file: str) -> dict:
             json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/mapId/id"))
         elif json_data["unlock_type"] == "DANNI":
             json_data["reference_id"] = get_text_element(root, "relConds/condition0/gradeId")
+        elif json_data["unlock_type"] == "PARTNER":
+            json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/partnerId/id"))
+        elif json_data["unlock_type"] == "MUSIC_GENRE_SELECTED":
+            json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/musicGenreId/id"))
         json_data["param"] = int(get_text_element(root, "relConds/condition0/param"))
 
         try:
