@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from libs.global_utils import get_text_element
+from global_utils import get_text_element
 
 
 def parse_event(file: str) -> dict:
@@ -13,8 +13,8 @@ def parse_event(file: str) -> dict:
         tree = ET.parse(xml_file)
         root = tree.getroot()
 
-        json_data["id"] = get_text_element(root, "name/id")
-        json_data["version"] = get_text_element(root, "resourceVersion/str")
+        json_data["id"] = int(get_text_element(root, "name/id"))
+        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
         json_data["name"] = get_text_element(root, "name/str")
         json_data["ddsBannerId"] = get_text_element(root, "ddsBannerName/id")
         json_data["eventBannerName"] = get_text_element(root, "substances/information/image/path")

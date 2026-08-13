@@ -35,7 +35,9 @@ unlock_types = {
     "MUSIC_GENRE_SELECTED",
     "TITLESET_DP",
     "MATCHING_FOR_TITLESETPLAYER",
-    "FULLCOMBO_COUNT"
+    "FULLCOMBO_COUNT",
+    "SATELLITE",
+    "TODOHUKEN_SEIHA"
 }
 def parse_title(file: str) -> dict:
     with open(file, "r", encoding="utf-8") as xml_file:
@@ -65,6 +67,10 @@ def parse_title(file: str) -> dict:
             json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/partnerId/id"))
         elif json_data["unlock_type"] == "MUSIC_GENRE_SELECTED":
             json_data["reference_id"] = int(get_text_element(root, "relConds/condition0/musicGenreId/id"))
+        elif json_data["unlock_type"] == "SATELLITE":
+            json_data["reference_id"] = get_text_element(root, "relConds/condition0/satelliteId")
+        elif json_data["unlock_type"] == "TODOHUKEN_SEIHA":
+            json_data["reference_id"] = get_text_element(root, "relConds/condition0/todohukenId")
         json_data["param"] = int(get_text_element(root, "relConds/condition0/param"))
 
         try:

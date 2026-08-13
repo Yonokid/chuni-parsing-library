@@ -11,8 +11,9 @@ def parse_trophy(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = get_text_element(root, "resourceVersion/str")
+        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
         json_data["name"] = get_text_element(root, "name/str")
         json_data["explainText"] = get_text_element(root, "explainText")
+        json_data["rareType"] = int(get_text_element(root, "rareType"))
 
     return json_data

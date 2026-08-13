@@ -2,11 +2,11 @@ import json
 import os
 import sys
 
-from chuni.chara import copy_chara_image, parse_chara
-from chuni.event import copy_ddsBanner, copy_eventBanner, parse_event
-from chuni.map import copy_ddsMap, parse_map
-from chuni.movie import copy_movie, parse_movie
-from chuni.music import copy_cueFile, copy_jacket, parse_music
+from chara import copy_chara_image, parse_chara
+from event import copy_ddsBanner, copy_eventBanner, parse_event
+from map import copy_ddsMap, parse_map
+from movie import copy_movie, parse_movie
+from music import copy_cueFile, copy_jacket, parse_music
 from present import parse_present
 from skill import parse_skill
 from trophy import parse_trophy
@@ -62,7 +62,7 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
         try:
             parsed_data = parse_func(xml_path)
             new_data.append(parsed_data)
-            id = parsed_data["id"]
+            id = str(parsed_data["id"])
 
             if data_type == "music":
                 path = os.path.join(directory, related_dir_name, f"{related_dir_name}{id.zfill(6)}")
@@ -90,7 +90,7 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
             elif data_type == "event":
                 path = os.path.join(directory, data_type, f"{data_type}{id.zfill(8)}", parsed_data["eventBannerName"])
                 banner_path = os.path.join(directory, related_dir_name, f"{related_dir_name}{parsed_data["ddsBannerId"].zfill(8)}")
-                if not os.path.isdir(path):
+                if os.path.isfile(path):
                     copy_eventBanner(os.path.join(directory, data_type, f"{data_type}{id.zfill(8)}"), parsed_data, data_output_dir)
                 if os.path.exists(banner_path):
                     copy_func(banner_path, parsed_data, data_output_dir)
@@ -131,9 +131,9 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "map", parse_map, copy_ddsMap, "ddsMap")
 
 def process_directory(directory: str, output_dir: str) -> None:
-    if directory.split('\\')[-1] == "Option":
+    if os.path.basename(directory.rstrip('/\\')) == "Option":
         for folder in os.listdir(directory):
-            parse_AXXX_directory(os.path.join(directory, folder), output_dir, os.path.join('\\'.join(directory.split('\\')[:-1]), "App", "data", "A000"))
+            parse_AXXX_directory(os.path.join(directory, folder), output_dir, os.path.join(os.path.dirname(directory.rstrip('/\\')), "App", "data", "A000"))
     else:
         parse_AXXX_directory(directory, output_dir)
 

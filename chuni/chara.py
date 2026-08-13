@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from libs.global_utils import get_text_element, safe_find
+from global_utils import get_text_element, safe_find
 
 
 def parse_chara(file: str) -> dict:
@@ -13,8 +13,8 @@ def parse_chara(file: str) -> dict:
         tree = ET.parse(xml_file)
         root = tree.getroot()
 
-        json_data["id"] = get_text_element(root, "name/id")
-        json_data["version"] = get_text_element(root, "resourceVersion/str")
+        json_data["id"] = int(get_text_element(root, "name/id"))
+        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
         json_data["name"] = get_text_element(root, "name/str")
         json_data["rightsInfoName"] = get_text_element(root, "rightsInfoName/str")
         json_data["sortName"] = get_text_element(root, "sortName")
@@ -33,8 +33,8 @@ def parse_chara(file: str) -> dict:
         json_data["addImages"] = addImages
         i = 1
         flavor_text = []
-        while os.path.exists(f"{os.path.dirname(file)}\\flavor{json_data["id"].zfill(6)}_0{i}.rom.txt"):
-            with open(f"{os.path.dirname(file)}\\flavor{json_data["id"].zfill(6)}_0{i}.rom.txt", "r", encoding="utf-8") as flavor:
+        while os.path.exists(os.path.join(os.path.dirname(file), f'flavor{str(json_data["id"]).zfill(6)}_0{i}.rom.txt')):
+            with open(os.path.join(os.path.dirname(file), f'flavor{str(json_data["id"]).zfill(6)}_0{i}.rom.txt'), "r", encoding="utf-8") as flavor:
                 flavor_text.append(''.join(flavor.readlines()))
             i += 1
         json_data["flavorText"] = flavor_text
@@ -42,9 +42,9 @@ def parse_chara(file: str) -> dict:
     return json_data
 
 def copy_chara_image(input: str, chara, output: str) -> None:
-    img = Image.open(f"{input}\\CHU_UI_Character_{chara["id"].zfill(5)[:-1]}_00_00.dds")
-    img.save(f"{output}\\CHU_UI_Character_{chara["id"].zfill(5)[:-1]}_00_00.webp")
-    img = Image.open(f"{input}\\CHU_UI_Character_{chara["id"].zfill(5)[:-1]}_00_01.dds")
-    img.save(f"{output}\\CHU_UI_Character_{chara["id"].zfill(5)[:-1]}_00_01.webp")
-    img = Image.open(f"{input}\\CHU_UI_Character_{chara["id"].zfill(5)[:-1]}_00_02.dds")
-    img.save(f"{output}\\CHU_UI_Character_{chara["id"].zfill(5)[:-1]}_00_02.webp")
+    img = Image.open(os.path.join(input, f'CHU_UI_Character_{str(chara["id"]).zfill(5)[:-1]}_00_00.dds'))
+    img.save(os.path.join(output, f'CHU_UI_Character_{str(chara["id"]).zfill(5)[:-1]}_00_00.webp'))
+    img = Image.open(os.path.join(input, f'CHU_UI_Character_{str(chara["id"]).zfill(5)[:-1]}_00_01.dds'))
+    img.save(os.path.join(output, f'CHU_UI_Character_{str(chara["id"]).zfill(5)[:-1]}_00_01.webp'))
+    img = Image.open(os.path.join(input, f'CHU_UI_Character_{str(chara["id"]).zfill(5)[:-1]}_00_02.dds'))
+    img.save(os.path.join(output, f'CHU_UI_Character_{str(chara["id"]).zfill(5)[:-1]}_00_02.webp'))

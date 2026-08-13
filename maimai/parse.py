@@ -2,6 +2,11 @@ import json
 import os
 import sys
 
+from chara import parse_chara
+from icon import parse_icon
+from map import parse_map
+from music import parse_music
+from plate import parse_plate
 from title import parse_title
 
 
@@ -72,6 +77,11 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
         return
 
     process_data(directory, alt_dir, output_dir, "title", parse_title, None, "title")
+    process_data(directory, alt_dir, output_dir, "icon", parse_icon, None, "icon")
+    process_data(directory, alt_dir, output_dir, "plate", parse_plate, None, "plate")
+    process_data(directory, alt_dir, output_dir, "chara", parse_chara, None, "chara")
+    process_data(directory, alt_dir, output_dir, "map", parse_map, None, "map")
+    process_data(directory, alt_dir, output_dir, "music", parse_music, None, "music")
 
 def process_directory(directory: str, output_dir: str) -> None:
     if directory.split('\\')[-1] == "Option":

@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from libs.global_utils import get_text_element, safe_find
+from global_utils import get_text_element, safe_find
 
 
 def parse_music(file: str) -> dict:
@@ -14,8 +14,8 @@ def parse_music(file: str) -> dict:
         tree = ET.parse(xml_file)
         root = tree.getroot()
 
-        json_data["id"] = get_text_element(root, "name/id")
-        json_data["version"] = get_text_element(root, "resourceVersion/str")
+        json_data["id"] = int(get_text_element(root, "name/id"))
+        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
         json_data["name"] = get_text_element(root, "name/str")
         json_data["sortName"] = get_text_element(root, "sortName")
         json_data["artistName"] = get_text_element(root, "artistName/str")
@@ -37,14 +37,14 @@ def parse_music(file: str) -> dict:
     return json_data
 
 def copy_cueFile(input: str, song: dict, output: str) -> None:
-    id = f'music{song["id"].zfill(4)}'
-    subprocess.run(["vgmstream/vgmstream-cli.exe", f"{input}\\{id}.awb", "-o", f"{input}\\{id}.wav"])
-    subprocess.run(["ffmpeg", "-y", "-i", f"{input}\\{id}.wav", f"{output}\\{id}.mp3"])
-    subprocess.run(["ffmpeg", "-y", "-i", f"{output}\\{id}.mp3",
+    id = f'music{str(song["id"]).zfill(4)}'
+    subprocess.run(["vgmstream-cli", os.path.join(input, f"{id}.awb"), "-o", os.path.join(input, f"{id}.wav")])
+    subprocess.run(["ffmpeg", "-y", "-i", os.path.join(input, f"{id}.wav"), os.path.join(output, f"{id}.mp3")])
+    subprocess.run(["ffmpeg", "-y", "-i", os.path.join(output, f"{id}.mp3"),
                     "-ss", str(song["previewStartTime"]/1000), "-to", str(song["previewEndTime"]/1000),
-                    f"{output}\\{id}_pre.mp3"])
-    os.remove(f"{input}\\{id}.wav")
+                    os.path.join(output, f"{id}_pre.mp3")])
+    os.remove(os.path.join(input, f"{id}.wav"))
 
 def copy_jacket(input: str, song: dict, output: str) -> None:
-    img = Image.open(f"{input}\\CHU_UI_Jacket_{song["id"].zfill(4)}.dds")
-    img.save(f"{output}\\CHU_UI_Jacket_{song["id"].zfill(4)}.webp")
+    img = Image.open(os.path.join(input, f'CHU_UI_Jacket_{str(song["id"]).zfill(4)}.dds'))
+    img.save(os.path.join(output, f'CHU_UI_Jacket_{str(song["id"]).zfill(4)}.webp'))
