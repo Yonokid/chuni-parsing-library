@@ -77,7 +77,7 @@ INT_ENUMS = {
     "chara.rank.type": {1: "Skill", 2: "Flavor text"},
     # MapAreaGridData.type (== displayType): 1 is always the first grid, 2 the last, 3 the reward grids between.
     "mapArea.grid.type": {1: "Start", 2: "Goal", 3: "Normal"},
-    # Named by the items that use them.
+    # Named by the items that use them. Banners (sprites ticketType_N) exist for 0/1/4/5/7 only.
     "ticket.type": {0: "CHUNITHM-NET access", 1: "Character rank boost", 2: "Player Lv boost",
                     3: "Challenge song all-difficulty play", 4: "MASTER play", 6: "Extra track"},
     "map.mapType": {0: "Normal", 1: "Endless", 2: "Event"},
