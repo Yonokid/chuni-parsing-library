@@ -30,6 +30,26 @@ def combine_unique_keys(list1, list2, unique_key):
         combined_dict[d[unique_key]] = d
     return list(combined_dict.values())
 
+def worlds_end_base(song: dict) -> int | None:
+    """WORLD'S END charts are separate 8xxx songs reusing their base song's audio: that song's id."""
+    cue = song["cueFile"]
+    if cue and cue["id"] != song["id"] and any(c["difficulty"] == 4 for c in song["charts"]):
+        return cue["id"]
+    return None
+
+def merge_worlds_end(songs: list) -> list:
+    """Folds each WORLD'S END song into its base song as one more chart (kept standalone if the base is missing)."""
+    by_id = {s["id"]: s for s in songs}
+    for song in list(songs):
+        base = by_id.get(worlds_end_base(song))
+        if base is None:
+            continue
+        for chart in song["charts"]:
+            chart["worldsEndId"] = song["id"]
+            base["charts"] = [c for c in base["charts"] if c.get("worldsEndId") != song["id"]] + [chart]
+        songs.remove(song)
+    return songs
+
 def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse_func, copy_func, related_dir_name: str) -> None:
     """
     Processes data (music, chara, movie) from the given directory.
@@ -72,11 +92,15 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
             id = str(parsed_data["id"])
 
             if data_type == "music":
-                path = os.path.join(directory, related_dir_name, f"{related_dir_name}{id.zfill(6)}")
+                base = worlds_end_base(parsed_data)
+                if base is not None and any(os.path.isdir(os.path.join(d, "music", f"music{base:04d}")) for d in (directory, alt_dir) if d):
+                    continue  # merged into the base song, which brings the audio and jacket
+                cue_id = str(parsed_data["cueFile"]["id"]) if parsed_data["cueFile"] else id
+                path = os.path.join(directory, related_dir_name, f"{related_dir_name}{cue_id.zfill(6)}")
                 if os.path.exists(path):
                     copy_func(path, parsed_data, data_output_dir)
                 elif alt_dir is not None:
-                    path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{id.zfill(6)}")
+                    path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{cue_id.zfill(6)}")
                     copy_func(path, parsed_data, data_output_dir)
                 path = os.path.join(directory, data_type, f"{data_type}{id.zfill(4)}")
                 copy_jacket(path, parsed_data, data_output_dir)
@@ -121,6 +145,8 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
             print(f"Error processing {data_type} {item.name}: {e}")
 
     combined_data = combine_unique_keys(existing_data, new_data, "id")
+    if data_type == "music":
+        combined_data = merge_worlds_end(combined_data)
 
     with open(json_file_path, "w", encoding="utf-8") as f:
         json.dump(combined_data, f, indent=4, ensure_ascii=False)
@@ -157,9 +183,10 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     ):
         process_data(directory, alt_dir, output_dir, data_type, parse_func, None, data_type)
 
-def process_directory(directory: str, output_dir: str) -> None:
+def process_directory(directory: str, output_dir: str, base_dir: str | None = None) -> None:
     if os.path.basename(directory.rstrip('/\\')) == "Option":
-        for folder in os.listdir(directory):
-            parse_AXXX_directory(os.path.join(directory, folder), output_dir, os.path.join(os.path.dirname(directory.rstrip('/\\')), "App", "data", "A000"))
+        base_dir = base_dir or os.path.join(os.path.dirname(directory.rstrip('/\\')), "App", "data", "A000")
+        for folder in sorted(os.listdir(directory)):  # later options override earlier ones
+            parse_AXXX_directory(os.path.join(directory, folder), output_dir, base_dir)
     else:
-        parse_AXXX_directory(directory, output_dir)
+        parse_AXXX_directory(directory, output_dir, base_dir)

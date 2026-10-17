@@ -50,6 +50,7 @@ PARTICLE_TYPES = {6001008, 205, 209}
 TIME_RATE_TYPE = 6001016
 PRIMITIVE_TYPE = 100
 SCREEN_PRIMITIVE_TYPE = 200
+SCREEN_FILL_TYPE = 6001020  # Sgl2dPrimitiveFill: a Sgl2DPrimitive stretched over the screen
 LIGHT_TYPES = {6001100: "ambient", 6001101: "parallel", 6001102: "point", 6001104: "fog"}
 FILTER_TYPES = {
     6001203: ("bloom", 17, {"threshold": 1, "intensity": 2}),  # BloomRange, BloomInten
@@ -262,6 +263,9 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
         2 top-left, y down, as the data suggests); its matrix is in 1920x1080 pixels.
         """
         b = ptr(node + 0x5C)
+        if u32(node) == SCREEN_FILL_TYPE:  # its 50x50 size is a placeholder
+            return {"width": 1920.0, "height": 1080.0, "count": 1, "mode": 0, "screen": 0,
+                    "textures": [t for t in textures if t >= 0], "color": [1.0, 1.0, 1.0, 1.0]}
         if u32(node) == SCREEN_PRIMITIVE_TYPE:  # {+0 origin mode, ..., +0xc priority, +0x10 s32 w, +0x14 s32 h, ...}
             width, height = float(s32(b + 0x10)), float(s32(b + 0x14))
         else:
@@ -422,7 +426,10 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
             out["tint"] = t
         if u32(node) in PARTICLE_TYPES and ptr(node + 0x5C):
             out["particles"] = particles(node, props.get(PROP_TEXTURES, []))
-        if u32(node) in (PRIMITIVE_TYPE, SCREEN_PRIMITIVE_TYPE) and ptr(node + 0x5C):
+        # untextured fills (flat colour flashes?) stay unexported
+        textured = any(t >= 0 for t in props.get(PROP_TEXTURES, []))
+        if (u32(node) in (PRIMITIVE_TYPE, SCREEN_PRIMITIVE_TYPE) or u32(node) == SCREEN_FILL_TYPE and textured) \
+                and ptr(node + 0x5C):
             out["primitive"] = primitive(node, props.get(PROP_TEXTURES, []))
         if uv := uv_modules(node):
             out["uv"] = uv
@@ -648,10 +655,12 @@ class _StageExporter:
                 lo = [min(floats[k::3]) for k in range(3)]
                 hi = [max(floats[k::3]) for k in range(3)]
                 attrs[name] = self.glb.accessor(col, 5126, count, "VEC3", 34962, min=lo, max=hi)
-            elif name == "NORMAL":  # UBYTE4N in xyz order -> float3
+            elif name == "NORMAL":  # UBYTE4N in xyz order (or plain float3) -> float3
                 normals = []
-                for i in range(0, len(col), 4):
-                    x, y, z = (col[i + k] / 127.5 - 1 for k in range(3))
+                xyz = struct.unpack(f"<{count * 3}f", col) if size == 12 else \
+                    [col[i + k] / 127.5 - 1 for i in range(0, len(col), 4) for k in range(3)]
+                for i in range(0, len(xyz), 3):
+                    x, y, z = xyz[i:i + 3]
                     length = (x * x + y * y + z * z) ** 0.5  # some files store unnormalized normals
                     normals += (x / length, y / length, z / length) if length > 1e-6 else (0, 1, 0)
                 attrs[name] = self.glb.accessor(struct.pack(f"<{count * 3}f", *normals), 5126, count, "VEC3", 34962)
@@ -719,12 +728,14 @@ class _StageExporter:
             objs = read_yabx(next(d for kind, d in chunks.values() if kind == 0))
             prims = [p for i, o in enumerate(objs) if o["_class"] == "stevia::Shape" and (not shapes or i in shapes)
                      if (p := self.primitive(objs, o, chunks, swaps))]
-            g["meshes"].append({"name": svo_name, "primitives": prims})
-            self.meshes[key] = len(g["meshes"]) - 1
+            self.meshes[key] = None
+            if prims:  # glTF forbids meshes without primitives
+                g["meshes"].append({"name": svo_name, "primitives": prims})
+                self.meshes[key] = len(g["meshes"]) - 1
             if any("JOINTS_0" in p["attributes"] for p in prims):
                 self.skeletons[svo_name] = _skeleton(objs)
 
-        return self.meshes[key] if g["meshes"][self.meshes[key]]["primitives"] else None
+        return self.meshes[key]
 
     def node(self, tree: dict) -> int | None:
         """glTF node for an AFNC subtree, or None when it holds no models."""

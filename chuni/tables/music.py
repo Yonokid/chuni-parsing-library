@@ -47,13 +47,17 @@ def parse_music(file: str) -> dict:
             fumen_element["file"] = get_text_element(fumen, "file/path")
             fumen_element["notesDesigner"] = get_text_element(fumen, "notesDesigner")
             fumen_element["defaultBpm"] = get_int(fumen, "defaultBpm")
+            if fumen_element["difficulty"] == 4:  # WORLD'S END: no level, a star rating and a kanji tag instead
+                fumen_element["stars"] = get_int(root, "starDifType")
+                fumen_element["worldsEndTag"] = get_text_element(root, "worldsEndTagName/str")
             json_data["charts"].append(fumen_element)
 
     return json_data
 
 def copy_cueFile(input: str, song: dict, output: str) -> None:
     id = f'music{str(song["id"]).zfill(4)}'
-    subprocess.run(["vgmstream-cli", os.path.join(input, f"{id}.awb"), "-o", os.path.join(input, f"{id}.wav")])
+    cue = f'music{str((song["cueFile"] or song)["id"]).zfill(4)}'  # WORLD'S END songs play another song's cue
+    subprocess.run(["vgmstream-cli", os.path.join(input, f"{cue}.awb"), "-o", os.path.join(input, f"{id}.wav")])
     subprocess.run(["ffmpeg", "-y", "-i", os.path.join(input, f"{id}.wav"), os.path.join(output, f"{id}.mp3")])
     subprocess.run(["ffmpeg", "-y", "-i", os.path.join(output, f"{id}.mp3"),
                     "-ss", str(song["previewStartTime"]/1000), "-to", str(song["previewEndTime"]/1000),
@@ -61,5 +65,5 @@ def copy_cueFile(input: str, song: dict, output: str) -> None:
     os.remove(os.path.join(input, f"{id}.wav"))
 
 def copy_jacket(input: str, song: dict, output: str) -> None:
-    img = Image.open(os.path.join(input, f'CHU_UI_Jacket_{str(song["id"]).zfill(4)}.dds'))
+    img = Image.open(os.path.join(input, song["jacketFile"]))
     img.save(os.path.join(output, f'CHU_UI_Jacket_{str(song["id"]).zfill(4)}.webp'))

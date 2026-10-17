@@ -16,12 +16,15 @@ def parse_ticket(file: str) -> dict:
         json_data["type"] = int(get_text_element(root, "type"))
         json_data["stockMaxNum"] = int(get_text_element(root, "stockMaxNum"))
         json_data["explainText"] = get_text_element(root, "explainText")
-        json_data["valueDay"] = int(get_text_element(root, "valueDay"))
-        json_data["valueDayRaw"] = int(get_text_element(root, "valueDayRaw"))
-        json_data["valueUse"] = int(get_text_element(root, "valueUse"))
-        json_data["valueUseRaw"] = int(get_text_element(root, "valueUseRaw"))
-        json_data["valueBoost"] = int(get_text_element(root, "valueBoost"))
-        json_data["valueBoostRaw"] = int(get_text_element(root, "valueBoostRaw"))
+        # PLUS+ nests the values in one <substances> child per ticket type, ordered by type
+        substances = root.find("substances")
+        if substances is not None:
+            kinds = [c for c in substances if c.tag not in ("resourceVersion", "type")]
+            src = kinds[int(get_text_element(substances, "type"))]
+        else:
+            src = root
+        for key in ("valueDay", "valueDayRaw", "valueUse", "valueUseRaw", "valueBoost", "valueBoostRaw"):
+            json_data[key] = int(src.findtext(key, "0"))
         json_data["priority"] = int(get_text_element(root, "priority"))
 
     return json_data

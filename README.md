@@ -9,6 +9,7 @@ Run from the repo root:
 ```bash
 uv run python -m chuni "<game>/App/data/A000" <output dir>   # base data
 uv run python -m chuni "<game>/Option" <output dir>          # option folders (A001, A002, …), merged by id
+uv run python -m chuni "<patch>/Option" <output dir> "<full game>/App/data/A000"  # when the version's own A000 is only a patch
 ```
 
 Layout:
