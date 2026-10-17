@@ -15,8 +15,11 @@ SUBSTANCES = {
         "image": get_text_element(el, "image/path"),
         "movie": get_ref(el, "movieName"),
         # PLUS+ only
-        **({"mapType": get_int(el, "mapType"), "courses": get_ref_list(el, "courseNames/list"),
+        **({"courses": get_ref_list(el, "courseNames/list"),
             "presents": get_ref_list(el, "presentNames/list")} if el.find("courseNames") is not None else {}),
+        # mapType: PLUS+ only; mapFilterID replaces it from 1.20.00
+        **({"mapType": get_int(el, "mapType")} if el.find("mapType") is not None else {}),
+        **({"mapFilter": get_ref(el, "mapFilterID")} if el.find("mapFilterID") is not None else {}),
     }),
     2: ("map", lambda el: {
         "tagText": get_text_element(el, "tagText"),
@@ -31,6 +34,7 @@ SUBSTANCES = {
     5: ("recommendMusic", lambda el: {"musics": get_ref_list(el, "musicNames/list")}),
     6: ("release", lambda el: {"value": get_int(el, "value")}),
     7: ("course", lambda el: {"courses": get_ref_list(el, "courseNames/list")}),
+    8: ("quest", lambda el: {"quests": get_ref_list(el, "questNames/list")}),
 }
 
 
@@ -50,6 +54,8 @@ def parse_event(file: str) -> dict:
         json_data["periodDispType"] = get_int(root, "periodDispType")
         json_data["alwaysOpen"] = get_bool(root, "alwaysOpen")
         json_data["priority"] = get_int(root, "priority")
+        if root.find("isAou") is not None:
+            json_data["isAou"] = get_bool(root, "isAou")
 
         substances = safe_find(root, "substances")
         substance_type = get_int(substances, "type")

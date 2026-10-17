@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from chuni.utils import get_int, get_ref, get_text_element, safe_find
+from chuni.utils import get_bool, get_int, get_ref, get_text_element, safe_find
 
 
 def parse_map(file: str) -> dict:
@@ -18,6 +18,10 @@ def parse_map(file: str) -> dict:
         json_data["name"] = get_text_element(root, "name/str")
         json_data["ddsMapId"] = get_text_element(root, "infos/MapDataAreaInfo/ddsMapName/id")
         json_data["mapType"] = get_int(root, "mapType")
+        if root.find("mapFilterID") is not None:  # 1.20.00+
+            json_data["mapFilter"] = get_ref(root, "mapFilterID")
+        if root.find("netDispPeriod") is not None:
+            json_data["netDispPeriod"] = get_bool(root, "netDispPeriod")
         json_data["stopMapArea"] = get_ref(root, "stopMapAreaName")
         json_data["stopUnlockEvent"] = get_ref(root, "stopUnlockEventName")
 

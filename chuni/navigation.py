@@ -18,6 +18,7 @@ SEGMENTS = [
     ("reward", "Rewards", "RedeemIcon"),
     ("course", "Courses", "FlagIcon"),
     ("namePlate", "Name Plates", "BadgeIcon"),
+    ("quest", "Quests", "ExploreIcon"),
     ("chargeItem", "Charge Items", "PaymentsIcon"),
 ]
 

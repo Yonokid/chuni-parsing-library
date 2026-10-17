@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from chuni.tables.chara import copy_chara_image, parse_chara
 from chuni.tables.chargeItem import parse_chargeItem
 from chuni.tables.course import parse_course
+from chuni.tables.quest import parse_quest
 from chuni.tables.name_plate import copy_namePlate_image, parse_namePlate
 from chuni.tables.reward import parse_reward
 from chuni.enums import build_enums
@@ -193,6 +194,7 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "shop", parse_shop, None, "shop")
     process_data(directory, alt_dir, output_dir, "mapArea", parse_mapArea, None, "mapArea")
     process_data(directory, alt_dir, output_dir, "course", parse_course, None, "course")
+    process_data(directory, alt_dir, output_dir, "quest", parse_quest, None, "quest")
     process_data(directory, alt_dir, output_dir, "namePlate", parse_namePlate, copy_namePlate_image, "namePlate")
     db_dir = os.path.join(os.path.dirname(os.path.normpath(alt_dir or directory)), "db")
     if os.path.isdir(db_dir):

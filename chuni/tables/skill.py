@@ -27,14 +27,21 @@ def _timing(el: ET.Element) -> dict:
         "award": get_int(el, "award"),
         "gaugeNum": get_int(el, "gaugeNum"),
         "time": get_int(el, "time"),
+        **({"ratio": get_int(el, "ratio")} if el.find("ratio") is not None else {}),
         "judgeAlways": get_bool(el, "judgeAlways"),
         "notesTypes": _ref_names(el, "notesTypes"),
         "notesJudgeResultRange": get_int(el, "notesJudgeResultRange"),
         "notesJudgeResult": get_enum_name(el, "notesJudgeResultID"),
     }
 
+def _precondition(el: ET.Element) -> dict:
+    """1.20.00+ gaugeAssist preconditions: A is chara level + ratio, B is an optional extra target."""
+    return {tag: int(el.findtext(tag, "0")) if tag != "use" else el.findtext(tag) == "true"
+            for tag in ("ratio", "charaLv", "use", "targetType", "targetNum", "expressionType") if el.find(tag) is not None}
+
 def _gauge_assist(el: ET.Element) -> dict:
     return {
+        **{k: _precondition(el.find(k)) for k in ("preconditionA", "preconditionB") if el.find(k) is not None},
         "notesGroupJudge": get_bool(el, "notesGroupJudge"),
         "timing": _timing(safe_find(el, "timing")),
         "useNumNoAccess": get_bool(el, "useNumNoAccess"),

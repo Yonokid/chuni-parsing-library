@@ -274,7 +274,7 @@ def motion(uvc: bytes) -> tuple[int, dict[str, dict]]:
     stride = (len(nodes) - 4) // count if count else 0
 
     def curve(kind: int, first: int, n: int):
-        pool = pools.get({0: 2, 1: 3, 2: 4}[kind], b"")
+        pool = pools.get({0: 2, 1: 3, 2: 4}[kind], b"")  # kind 3 (1.20.00+: pool 5, one int16 per frame, scale unknown) is skipped by the caller
         if kind == 2:
             values = struct.unpack_from(f"<{n}f", pool, 4 + 4 * first)
             return [(i, v, 0.0) for i, v in enumerate(values)]
@@ -286,7 +286,7 @@ def motion(uvc: bytes) -> tuple[int, dict[str, dict]]:
     for i in range(count):
         o = 4 + stride * i
         ints, floats = struct.unpack_from("<43i", nodes, o), struct.unpack_from("<43f", nodes, o)
-        curves = {slot: curve(*ints[slot * 3:slot * 3 + 3]) for slot in range(11) if ints[slot * 3 + 2] > 0}
+        curves = {slot: curve(*ints[slot * 3:slot * 3 + 3]) for slot in range(11) if ints[slot * 3 + 2] > 0 and ints[slot * 3] in (0, 1, 2)}
         if curves and i < len(names):
             out[names[i].decode("utf-8", "replace")] = {"curves": curves, "translation": floats[37:40], "scale": floats[40:43]}
     return frames, out
@@ -309,7 +309,7 @@ def uv_motion(uvc: bytes) -> dict | None:
         kind, first, n = ints[axis * 3:axis * 3 + 3]
         if n <= 0:
             continue
-        pool = pools.get({0: 2, 1: 3, 2: 4}[kind], b"")
+        pool = pools.get({0: 2, 1: 3, 2: 4}[kind], b"")  # kind 3 (1.20.00+: pool 5, one int16 per frame, scale unknown) is skipped by the caller
         if kind == 2:
             curves[axis] = [(i, v, 0.0) for i, v in enumerate(struct.unpack_from(f"<{n}f", pool, 4 + 4 * first))]
         elif kind == 0:

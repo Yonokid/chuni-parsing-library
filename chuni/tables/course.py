@@ -29,9 +29,12 @@ def parse_course(file: str) -> dict:
         json_data["name"] = get_text_element(root, "name/str")
         json_data["disableFlag"] = get_bool(root, "disableFlag")
         json_data["difficulty"] = {"id": get_int(root, "difficulty/id"), "name": get_text_element(root, "difficulty/data")}
-        json_data["category"] = get_int(root, "category")
+        if root.find("category") is not None:  # dropped in 1.20.00
+            json_data["category"] = get_int(root, "category")
         json_data["rule"] = get_ref(root, "rule")  # courseRule/courseRule<name>
         json_data["reward"] = get_ref(root, "reward")
+        if root.find("reward2nd") is not None:  # 1.20.00+
+            json_data["reward2nd"] = get_ref(root, "reward2nd")
         json_data["priority"] = get_int(root, "priority")
         json_data["infos"] = [_info(i) for i in safe_find(root, "infos").iter("CourseMusicDataInfo")]
 
