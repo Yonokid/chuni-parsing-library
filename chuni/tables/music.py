@@ -25,7 +25,7 @@ def parse_music(file: str) -> dict:
         json_data["releaseTagName"] = get_text_element(root, "releaseTagName/str")
         json_data["exType"] = get_int(root, "exType")
         json_data["rightsInfo"] = get_ref(root, "rightsInfoName")
-        json_data["musicLabel"] = get_enum_name(root, "musicLableID")
+        json_data["musicLabel"] = get_enum_name(root, "musicLableID") if root.find("musicLableID") is not None else None  # absent in 1.25
         json_data["jacketFile"] = get_text_element(root, "jaketFile/path")
         json_data["priority"] = get_int(root, "priority")
         json_data["cueFile"] = get_ref(root, "cueFileName")

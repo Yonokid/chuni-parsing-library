@@ -18,7 +18,8 @@ def parse_trophy(file: str) -> dict:
         json_data["rareType"] = int(get_text_element(root, "rareType"))
         json_data["defaultHave"] = get_text_element(root, "defaultHave") == "true"
         json_data["priority"] = get_int(root, "priority")
-        json_data["openCondition"] = parse_open_condition(safe_find(root, "openCondition"))
+        if root.find("openCondition") is not None:  # absent in 1.25
+            json_data["openCondition"] = parse_open_condition(safe_find(root, "openCondition"))
         json_data["conditions"] = parse_conditions(root)
 
     return json_data

@@ -13,6 +13,8 @@ def parse_mapArea(file: str) -> dict:
         json_data["id"] = int(get_text_element(root, "name/id"))
         json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
         json_data["name"] = get_text_element(root, "name/str")
+        if root.find("mapBonusName") is not None:  # older versions have no area bonus
+            json_data["mapBonus"] = get_ref(root, "mapBonusName")
         json_data["grids"] = []
         grids = safe_find(root, "grids")
         for grid in grids.iter("MapAreaGridData"):

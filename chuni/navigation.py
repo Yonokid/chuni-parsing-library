@@ -9,7 +9,6 @@ SEGMENTS = [
     ("trophy", "Trophies", "EmojiEventsIcon"),
     ("event", "Events", "EventIcon"),
     ("map", "Maps", "MapIcon"),
-    ("mapArea", "Map Areas", "GridViewIcon"),
     ("movie", "Movies", "MovieIcon"),
     ("present", "Presents", "CardGiftcardIcon"),
     ("shop", "Shop", "ShoppingCartIcon"),

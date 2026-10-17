@@ -1,3 +1,4 @@
+import json
 import os
 import xml.etree.ElementTree as ET
 
@@ -47,3 +48,35 @@ def copy_ddsMap(input: str, event: dict, output: str) -> None:
     img = Image.open(os.path.join(input, dds_files[0]))
     event["ddsMapName"] = f"{filename}.webp"
     img.save(os.path.join(output, f"{filename}.webp"))
+
+def embed_map_details(output_dir: str) -> None:
+    """Inlines each area's tiles (mapArea.json) and tile bonus (mapBonus.json) into map.json: they only make sense as part of a map."""
+    def load(name):
+        path = os.path.join(output_dir, name, f"{name}.json")
+        if not os.path.exists(path):
+            return None, {}
+        with open(path, "r", encoding="utf-8") as f:
+            return path, {item["id"]: item for item in json.load(f)}
+
+    map_path, _ = load("map")
+    if map_path is None:
+        return
+    _, areas = load("mapArea")
+    _, bonuses = load("mapBonus")
+    _, gauges = load("gauge")
+    with open(map_path, "r", encoding="utf-8") as f:
+        maps = json.load(f)
+    for map_ in maps:
+        for info in map_["areas"]:
+            area = areas.get((info["mapArea"] or {}).get("id"))
+            if area is None:
+                continue
+            for key in ("normalGauge", "challengeGauge"):  # per-difficulty norma/max, see gauge.md
+                gauge = gauges.get((info[key] or {}).get("id"))
+                if gauge:
+                    info[key] = {**info[key], "fumens": gauge["fumens"]}
+            info["grids"] = area["grids"]
+            bonus = bonuses.get((area.get("mapBonus") or {}).get("id"))
+            info["bonus"] = bonus and {"id": bonus["id"], "name": bonus["name"], "substances": bonus["substances"]}
+    with open(map_path, "w", encoding="utf-8") as f:
+        json.dump(maps, f, indent=4, ensure_ascii=False)

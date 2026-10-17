@@ -3,6 +3,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 
 from chuni.tables.chara import copy_chara_image, parse_chara
+from chuni.tables.aimeCollab import copy_aimeCollab_image, parse_aimeCollab
 from chuni.tables.chargeItem import parse_chargeItem
 from chuni.tables.course import parse_course
 from chuni.tables.quest import parse_quest
@@ -11,7 +12,8 @@ from chuni.tables.reward import parse_reward
 from chuni.enums import build_enums
 from chuni.navigation import write_navigation
 from chuni.tables.event import copy_ddsBanner, copy_eventBanner, parse_event
-from chuni.tables.map import copy_ddsMap, parse_map
+from chuni.tables.map import copy_ddsMap, embed_map_details, parse_map
+from chuni.tables.mapBonus import parse_mapBonus
 from chuni.tables.map_area import parse_mapArea
 from chuni.tables.movie import copy_movie, parse_movie
 from chuni.tables.music import copy_cueFile, copy_jacket, parse_music
@@ -123,7 +125,7 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                 elif alt_dir is not None:
                     path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{id.zfill(6)}")
                     copy_func(path, parsed_data, data_output_dir)
-            elif data_type == "namePlate":
+            elif data_type in ("namePlate", "aimeCollab"):
                 path = os.path.join(directory, data_type, item.name)
                 copy_func(path, parsed_data, data_output_dir)
             elif data_type == "movie":
@@ -193,6 +195,8 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "map", parse_map, copy_ddsMap, "ddsMap")
     process_data(directory, alt_dir, output_dir, "shop", parse_shop, None, "shop")
     process_data(directory, alt_dir, output_dir, "mapArea", parse_mapArea, None, "mapArea")
+    process_data(directory, alt_dir, output_dir, "mapBonus", parse_mapBonus, None, "mapBonus")
+    process_data(directory, alt_dir, output_dir, "aimeCollab", parse_aimeCollab, copy_aimeCollab_image, "aimeCollab")
     process_data(directory, alt_dir, output_dir, "course", parse_course, None, "course")
     process_data(directory, alt_dir, output_dir, "quest", parse_quest, None, "quest")
     process_data(directory, alt_dir, output_dir, "namePlate", parse_namePlate, copy_namePlate_image, "namePlate")
@@ -217,4 +221,5 @@ def process_directory(directory: str, output_dir: str, base_dir: str | None = No
             parse_AXXX_directory(os.path.join(directory, folder), output_dir, base_dir)
     else:
         parse_AXXX_directory(directory, output_dir, base_dir)
+    embed_map_details(output_dir)
     write_navigation(output_dir)
