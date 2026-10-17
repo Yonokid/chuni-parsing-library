@@ -50,7 +50,7 @@ def copy_ddsMap(input: str, event: dict, output: str) -> None:
     img.save(os.path.join(output, f"{filename}.webp"))
 
 def embed_map_details(output_dir: str) -> None:
-    """Inlines each area's tiles (mapArea.json) and tile bonus (mapBonus.json) into map.json: they only make sense as part of a map."""
+    """Inlines each area's tiles (mapArea.json) with full rewards, and tile bonus (mapBonus.json), into map.json: they only make sense as part of a map."""
     def load(name):
         path = os.path.join(output_dir, name, f"{name}.json")
         if not os.path.exists(path):
@@ -64,6 +64,30 @@ def embed_map_details(output_dir: str) -> None:
     _, areas = load("mapArea")
     _, bonuses = load("mapBonus")
     _, gauges = load("gauge")
+    _, rewards = load("reward")
+
+    _, skills = load("skill")
+    _, plates = load("namePlate")
+    _, tickets = load("ticket")
+
+    def icon(reward):
+        path = icon_path(reward)
+        return path if path and os.path.exists(os.path.join(output_dir, path)) else None  # e.g. ticket types without a banner
+
+    def icon_path(reward):
+        """Image path (relative to the version folder) for a non-chara reward, if it has one."""
+        if reward["skill"] and reward["skill"]["id"] in skills:
+            return f"sprites/skillCategory_{skills[reward['skill']['id']]['category']}.webp"
+        if reward["namePlate"] and reward["namePlate"]["id"] in plates:
+            return f"namePlate/{plates[reward['namePlate']['id']]['image']}"
+        if reward["ticket"] and reward["ticket"]["id"] in tickets:
+            return f"sprites/ticketType_{tickets[reward['ticket']['id']]['type']}.webp"
+
+    def full_reward(ref):
+        reward = rewards.get((ref or {}).get("id"))
+        if not (ref and reward):
+            return ref
+        return {**ref, **reward, "icon": icon(reward)}
     with open(map_path, "r", encoding="utf-8") as f:
         maps = json.load(f)
     for map_ in maps:
@@ -75,7 +99,8 @@ def embed_map_details(output_dir: str) -> None:
                 gauge = gauges.get((info[key] or {}).get("id"))
                 if gauge:
                     info[key] = {**info[key], "fumens": gauge["fumens"]}
-            info["grids"] = area["grids"]
+            info["reward"] = full_reward(info["reward"])
+            info["grids"] = [{**grid, "reward": full_reward(grid.get("reward"))} if "reward" in grid else grid for grid in area["grids"]]
             bonus = bonuses.get((area.get("mapBonus") or {}).get("id"))
             info["bonus"] = bonus and {"id": bonus["id"], "name": bonus["name"], "substances": bonus["substances"]}
     with open(map_path, "w", encoding="utf-8") as f:

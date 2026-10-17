@@ -54,6 +54,13 @@ SPRITES = {
         "ticketType_7": (0, 782, 384, 936),    # マップ進行 倍
         "ticketPresent_0": (893, 0, 981, 88),  # "PRESENT" corner ribbon, overlay top-right on present tickets
     },
+    # 1.25 map result screen: board tile (124x59), START label, GOAL plate and MAP BONUS roundel.
+    "CHU_UI_result_map_00_v11.dds": {
+        "mapTile": (309, 458, 433, 517),
+        "mapStart": (308, 422, 381, 450),
+        "mapGoal": (458, 471, 617, 505),
+        "mapBonus": (864, 422, 1054, 608),  # pink MAP BONUS roundel
+    },
 }
 
 def export_sprites(texture_dir: str, output_dir: str) -> list[str]:
