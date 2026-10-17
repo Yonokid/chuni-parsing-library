@@ -20,6 +20,7 @@ Layout:
 | `chuni/tables/` | one XML parser per data type (music, chara, stage, event, …) |
 | `chuni/stage3d/` | 3D stages: `.afb` reader (`afb.py`), stevia object DB (`yabx.py`), `.glb` export (`export.py`), animation (`anim.py`) |
 | `chuni/enums.py`, `chuni/sprites.py` | enum tables from `db/`, UI sprite sheets |
+| `chuni/navigation.py` | writes `navigation.json` (viewer sidebar entries) for each output |
 | `chuni/utils.py` | XML helpers |
 | `tests/test_parsers.py` | smoke test: `uv run python -m tests.test_parsers "<game>/App/data/A000"` |
 
