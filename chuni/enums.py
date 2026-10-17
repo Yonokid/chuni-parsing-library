@@ -80,7 +80,8 @@ INT_ENUMS = {
     # Named by the items that use them. Banners (sprites ticketType_N) exist for 0/1/4/5/7 only.
     "ticket.type": {0: "CHUNITHM-NET access", 1: "Character rank boost", 2: "Player Lv boost",
                     3: "Challenge song all-difficulty play", 4: "MASTER play", 5: "WORLD'S END play", 6: "Extra track",
-                    7: "Map progress boost", 8: "Premium", 9: "Character rank limit unlock"},
+                    7: "Map progress boost", 8: "Premium", 9: "Character rank limit unlock",
+                    10: "Map fixed squares boost"},  # "+10 squares for 3 songs"
     # RewardSubsubstance.type: which of gamePoint/ticket/trophy/chara/skill/namePlate is set (music, 6, is unused).
     "reward.type": {0: "Game points", 1: "Ticket", 2: "Trophy", 3: "Character", 4: "Skill", 5: "Name plate", 6: "Music"},
     "map.mapType": {0: "Normal", 1: "Endless", 2: "Event"},
