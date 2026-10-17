@@ -62,7 +62,7 @@ INT_ENUMS = {
     "skill.substance.type": {0: "gaugeAssist", 1: "gaugeKeep", 2: "damageGuard", 3: "deathPenalty",
                              4: "changeJudgeIni", 5: "changeJudgeResult", 6: "changeSpeed", 7: "changeImg"},
     # EventData.substances.type: see event.SUBSTANCES.
-    "event.substance.type": {0: "flag", 1: "information", 2: "map", 3: "music", 4: "advertiseMovie", 5: "recommendMusic"},
+    "event.substance.type": {0: "flag", 1: "information", 2: "map", 3: "music", 4: "advertiseMovie", 5: "recommendMusic", 6: "release", 7: "course"},
     # Skill explain texts: award 1/2/3 skills say FULL COMBO / FULL CHAIN / ALL JUSTICE (not the ScoreAward table order).
     "skill.timing.award": {0: "None", 1: "FULL COMBO", 2: "FULL CHAIN", 3: "ALL JUSTICE"},
     # Skill explain texts: scene 1 "ゲーム開始時", 2 "ゲーム終了時"; the only scene-3 skill (乙女街道) does both.

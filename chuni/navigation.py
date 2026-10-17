@@ -16,6 +16,8 @@ SEGMENTS = [
     ("stage", "Stages", "ViewCarouselIcon"),
     ("ticket", "Tickets", "LocalActivityIcon"),
     ("reward", "Rewards", "RedeemIcon"),
+    ("course", "Courses", "FlagIcon"),
+    ("namePlate", "Name Plates", "BadgeIcon"),
     ("chargeItem", "Charge Items", "PaymentsIcon"),
 ]
 

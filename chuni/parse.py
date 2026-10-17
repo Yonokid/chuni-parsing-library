@@ -1,8 +1,11 @@
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 from chuni.tables.chara import copy_chara_image, parse_chara
 from chuni.tables.chargeItem import parse_chargeItem
+from chuni.tables.course import parse_course
+from chuni.tables.name_plate import copy_namePlate_image, parse_namePlate
 from chuni.tables.reward import parse_reward
 from chuni.enums import build_enums
 from chuni.navigation import write_navigation
@@ -85,6 +88,11 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
             existing_data = []
 
     new_data = []
+    pool = ThreadPoolExecutor()
+    audio_jobs = []
+    if data_type == "music":  # vgmstream/ffmpeg dominate runtime: run them concurrently, errors reported below
+        copy_audio = copy_func
+        copy_func = lambda path, song, out: audio_jobs.append((song["id"], pool.submit(copy_audio, path, song, out)))
     for item in os.scandir(data_dir):
         if not item.is_dir():
             continue
@@ -114,6 +122,9 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                 elif alt_dir is not None:
                     path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{id.zfill(6)}")
                     copy_func(path, parsed_data, data_output_dir)
+            elif data_type == "namePlate":
+                path = os.path.join(directory, data_type, item.name)
+                copy_func(path, parsed_data, data_output_dir)
             elif data_type == "movie":
                 path = os.path.join(directory, related_dir_name, f"{related_dir_name}{id.zfill(6)}", parsed_data["filename"])
                 if os.path.exists(path):
@@ -147,6 +158,13 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
         except (FileNotFoundError, IOError, ValueError) as e:
             print(f"Error processing {data_type} {item.name}: {e}")
 
+    for song_id, job in audio_jobs:
+        try:
+            job.result()
+        except (FileNotFoundError, IOError, ValueError) as e:
+            print(f"Error processing {data_type} {song_id}: {e}")
+    pool.shutdown()
+
     combined_data = combine_unique_keys(existing_data, new_data, "id")
     if data_type == "music":
         combined_data = merge_worlds_end(combined_data)
@@ -174,6 +192,8 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "map", parse_map, copy_ddsMap, "ddsMap")
     process_data(directory, alt_dir, output_dir, "shop", parse_shop, None, "shop")
     process_data(directory, alt_dir, output_dir, "mapArea", parse_mapArea, None, "mapArea")
+    process_data(directory, alt_dir, output_dir, "course", parse_course, None, "course")
+    process_data(directory, alt_dir, output_dir, "namePlate", parse_namePlate, copy_namePlate_image, "namePlate")
     db_dir = os.path.join(os.path.dirname(os.path.normpath(alt_dir or directory)), "db")
     if os.path.isdir(db_dir):
         ensure_directory(output_dir)

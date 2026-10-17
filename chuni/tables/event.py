@@ -14,6 +14,9 @@ SUBSTANCES = {
         "text": line_break(el.findtext("text")),
         "image": get_text_element(el, "image/path"),
         "movie": get_ref(el, "movieName"),
+        # PLUS+ only
+        **({"mapType": get_int(el, "mapType"), "courses": get_ref_list(el, "courseNames/list"),
+            "presents": get_ref_list(el, "presentNames/list")} if el.find("courseNames") is not None else {}),
     }),
     2: ("map", lambda el: {
         "tagText": get_text_element(el, "tagText"),
@@ -26,6 +29,8 @@ SUBSTANCES = {
         "secondMovie": get_ref(el, "secondMovieName"),
     }),
     5: ("recommendMusic", lambda el: {"musics": get_ref_list(el, "musicNames/list")}),
+    6: ("release", lambda el: {"value": get_int(el, "value")}),
+    7: ("course", lambda el: {"courses": get_ref_list(el, "courseNames/list")}),
 }
 
 

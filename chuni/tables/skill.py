@@ -103,7 +103,7 @@ def parse_skill(file: str) -> dict:
         json_data["growthUseNum"] = get_int(root, "growthUseNum")
         json_data["price"] = int(get_text_element(root, "price"))
         json_data["defaultHave"] = get_bool(root, "defaultHave")
-        json_data["chgInvalidColor"] = get_bool(root, "chgInvalidColor")
+        json_data["chgInvalidColor"] = root.findtext("chgInvalidColor", "false") == "true"
         json_data["priority"] = get_int(root, "priority")
 
         json_data["targetCharas"] = get_ref_list(root, "targetCharaNames/list")

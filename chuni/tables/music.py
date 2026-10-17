@@ -57,12 +57,14 @@ def parse_music(file: str) -> dict:
 def copy_cueFile(input: str, song: dict, output: str) -> None:
     id = f'music{str(song["id"]).zfill(4)}'
     cue = f'music{str((song["cueFile"] or song)["id"]).zfill(4)}'  # WORLD'S END songs play another song's cue
-    subprocess.run(["vgmstream-cli", os.path.join(input, f"{cue}.awb"), "-o", os.path.join(input, f"{id}.wav")])
-    subprocess.run(["ffmpeg", "-y", "-i", os.path.join(input, f"{id}.wav"), os.path.join(output, f"{id}.mp3")])
-    subprocess.run(["ffmpeg", "-y", "-i", os.path.join(output, f"{id}.mp3"),
-                    "-ss", str(song["previewStartTime"]/1000), "-to", str(song["previewEndTime"]/1000),
-                    os.path.join(output, f"{id}_pre.mp3")])
-    os.remove(os.path.join(input, f"{id}.wav"))
+    mp3, preview, wav = (os.path.join(output, f"{id}{suffix}") for suffix in (".mp3", "_pre.mp3", ".wav"))
+    if os.path.exists(mp3) and os.path.exists(preview):  # same song re-listed by a later Option
+        return
+    subprocess.run(["vgmstream-cli", os.path.join(input, f"{cue}.awb"), "-o", wav])  # wav goes in output: source dir may be a slow disk
+    subprocess.run(["ffmpeg", "-y", "-i", wav, mp3])
+    subprocess.run(["ffmpeg", "-y", "-i", mp3,
+                    "-ss", str(song["previewStartTime"]/1000), "-to", str(song["previewEndTime"]/1000), preview])
+    os.remove(wav)
 
 def copy_jacket(input: str, song: dict, output: str) -> None:
     img = Image.open(os.path.join(input, song["jacketFile"]))
