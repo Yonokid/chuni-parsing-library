@@ -1,15 +1,22 @@
 import json
 import os
-import sys
 
-from chara import copy_chara_image, parse_chara
-from event import copy_ddsBanner, copy_eventBanner, parse_event
-from map import copy_ddsMap, parse_map
-from movie import copy_movie, parse_movie
-from music import copy_cueFile, copy_jacket, parse_music
-from present import parse_present
-from skill import parse_skill
-from trophy import parse_trophy
+from chuni.tables.chara import copy_chara_image, parse_chara
+from chuni.enums import build_enums
+from chuni.tables.event import copy_ddsBanner, copy_eventBanner, parse_event
+from chuni.tables.map import copy_ddsMap, parse_map
+from chuni.tables.map_area import parse_mapArea
+from chuni.tables.movie import copy_movie, parse_movie
+from chuni.tables.music import copy_cueFile, copy_jacket, parse_music
+from chuni.tables.present import parse_present
+from chuni.tables.resources import (parse_gameTable, parse_gauge, parse_iniFile,
+                       parse_ranking, parse_rightsInfo)
+from chuni.tables.shop import parse_shop
+from chuni.tables.skill import parse_skill
+from chuni.sprites import export_sprites
+from chuni.tables.stage import copy_stage_files, parse_stage
+from chuni.tables.ticket import parse_ticket
+from chuni.tables.trophy import parse_trophy
 
 
 def ensure_directory(path: str) -> None:
@@ -58,7 +65,7 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
     for item in os.scandir(data_dir):
         if not item.is_dir():
             continue
-        xml_path = os.path.join(data_dir, item.name, f"{data_type.capitalize()}.xml")
+        xml_path = os.path.join(data_dir, item.name, f"{data_type[0].upper()}{data_type[1:]}.xml")
         try:
             parsed_data = parse_func(xml_path)
             new_data.append(parsed_data)
@@ -92,7 +99,9 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                 banner_path = os.path.join(directory, related_dir_name, f"{related_dir_name}{parsed_data["ddsBannerId"].zfill(8)}")
                 if os.path.isfile(path):
                     copy_eventBanner(os.path.join(directory, data_type, f"{data_type}{id.zfill(8)}"), parsed_data, data_output_dir)
-                if os.path.exists(banner_path):
+                if parsed_data["ddsBannerId"] == "-1":  # no banner
+                    pass
+                elif os.path.exists(banner_path):
                     copy_func(banner_path, parsed_data, data_output_dir)
                 elif alt_dir is not None:
                     banner_path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{parsed_data["ddsBannerId"].zfill(8)}")
@@ -104,6 +113,9 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                 elif alt_dir is not None:
                     path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{parsed_data["ddsMapId"].zfill(8)}")
                     copy_func(path, parsed_data, data_output_dir)
+            elif data_type == "stage":
+                path = os.path.join(directory, data_type, item.name)
+                copy_func(path, parsed_data, data_output_dir)
 
         except (FileNotFoundError, IOError, ValueError) as e:
             print(f"Error processing {data_type} {item.name}: {e}")
@@ -124,11 +136,26 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "movie", parse_movie, copy_movie, "movie")
     process_data(directory, alt_dir, output_dir, "skill", parse_skill, None, "skill")
     process_data(directory, alt_dir, output_dir, "trophy", parse_trophy, None, "trophy")
-    process_data(directory, alt_dir, output_dir, "ticket", parse_trophy, None, "ticket")
+    process_data(directory, alt_dir, output_dir, "ticket", parse_ticket, None, "ticket")
     process_data(directory, alt_dir, output_dir, "present", parse_present, None, "present")
-    process_data(directory, alt_dir, output_dir, "stage", parse_skill, None, "stage")
+    process_data(directory, alt_dir, output_dir, "stage", parse_stage, copy_stage_files, "stage")
     process_data(directory, alt_dir, output_dir, "event", parse_event, copy_ddsBanner, "ddsBanner")
     process_data(directory, alt_dir, output_dir, "map", parse_map, copy_ddsMap, "ddsMap")
+    process_data(directory, alt_dir, output_dir, "shop", parse_shop, None, "shop")
+    process_data(directory, alt_dir, output_dir, "mapArea", parse_mapArea, None, "mapArea")
+    db_dir = os.path.join(os.path.dirname(os.path.normpath(alt_dir or directory)), "db")
+    if os.path.isdir(db_dir):
+        ensure_directory(output_dir)
+        with open(os.path.join(output_dir, "enums.json"), "w", encoding="utf-8") as f:
+            json.dump(build_enums(db_dir), f, indent=4, ensure_ascii=False)
+    texture_dir = os.path.join(os.path.dirname(db_dir), "surfboard", "texture")
+    if os.path.isdir(texture_dir):
+        export_sprites(texture_dir, os.path.join(output_dir, "sprites"))
+    for data_type, parse_func in (
+        ("iniFile", parse_iniFile), ("rightsInfo", parse_rightsInfo), ("gauge", parse_gauge),
+        ("gameTable", parse_gameTable), ("ranking", parse_ranking),
+    ):
+        process_data(directory, alt_dir, output_dir, data_type, parse_func, None, data_type)
 
 def process_directory(directory: str, output_dir: str) -> None:
     if os.path.basename(directory.rstrip('/\\')) == "Option":
@@ -136,8 +163,3 @@ def process_directory(directory: str, output_dir: str) -> None:
             parse_AXXX_directory(os.path.join(directory, folder), output_dir, os.path.join(os.path.dirname(directory.rstrip('/\\')), "App", "data", "A000"))
     else:
         parse_AXXX_directory(directory, output_dir)
-
-if __name__ == "__main__":
-    directory = sys.argv[1]
-    output_directory = sys.argv[2]
-    process_directory(directory, output_directory)

@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from global_utils import get_text_element
+from chuni.utils import get_text_element, get_ref
 
 
 def parse_present(file: str) -> dict:
@@ -14,5 +14,8 @@ def parse_present(file: str) -> dict:
         json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
         json_data["name"] = get_text_element(root, "name/str")
         json_data["messageText"] = get_text_element(root, "messageText")
+        json_data["gamePoint"] = int(get_text_element(root, "gamePoint"))
+        for key in ("ticket", "chara", "skill", "trophy"):
+            json_data[f"{key}"] = get_ref(root, f"{key}Name")
 
     return json_data

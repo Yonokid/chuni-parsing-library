@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 from wannacri.wannacri import Usm
 
-from global_utils import get_text_element
+from chuni.utils import get_text_element
 
 
 def parse_movie(file: str) -> dict:
@@ -31,7 +31,8 @@ def copy_movie(input: str, movie, output: str) -> str:
         audio_file = file
     for file in os.listdir(os.path.join(extracted_path, "videos")):
         video_file = file
-    subprocess.run(["ffmpeg", "-y", "-i", os.path.join(extracted_path, "audios", audio_file), "-i", os.path.join(extracted_path, "videos", video_file), os.path.join(output, f'{movie["name"]}.mp4')])
-    movie["mp4name"] = movie["name"] + ".mp4"
+    # named after the .usm, not the title: Japanese filenames get mangled by FTP/server tooling
+    movie["mp4name"] = os.path.splitext(movie["filename"])[0] + ".mp4"
+    subprocess.run(["ffmpeg", "-y", "-i", os.path.join(extracted_path, "audios", audio_file), "-i", os.path.join(extracted_path, "videos", video_file), os.path.join(output, movie["mp4name"])])
     shutil.rmtree(extracted_path)
     return movie

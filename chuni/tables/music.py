@@ -4,7 +4,8 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from global_utils import get_text_element, safe_find
+from chuni.utils import (get_enum_name, get_int, get_ref, get_ref_list,
+                          get_text_element, safe_find)
 
 
 def parse_music(file: str) -> dict:
@@ -20,8 +21,18 @@ def parse_music(file: str) -> dict:
         json_data["sortName"] = get_text_element(root, "sortName")
         json_data["artistName"] = get_text_element(root, "artistName/str")
         json_data["genreName"] = get_text_element(root, "genreNames/list/StringID/str")
+        json_data["genres"] = get_ref_list(root, "genreNames/list")
+        json_data["releaseTagName"] = get_text_element(root, "releaseTagName/str")
+        json_data["exType"] = get_int(root, "exType")
+        json_data["rightsInfo"] = get_ref(root, "rightsInfoName")
+        json_data["musicLabel"] = get_enum_name(root, "musicLableID")
+        json_data["jacketFile"] = get_text_element(root, "jaketFile/path")
+        json_data["priority"] = get_int(root, "priority")
+        json_data["cueFile"] = get_ref(root, "cueFileName")
+        json_data["stage"] = get_ref(root, "stageName")
         json_data["previewStartTime"] = int(get_text_element(root, "previewStartTime"))
         json_data["previewEndTime"] = int(get_text_element(root, "previewEndTime"))
+        json_data["firstLock"] = get_text_element(root, "firstLock") == "true"
         json_data["charts"] = []
         fumens = safe_find(root, "fumens")
         for fumen in fumens.iter("MusicFumenData"):
@@ -32,6 +43,10 @@ def parse_music(file: str) -> dict:
             level = int(get_text_element(fumen, "level"))
             levelDecimal = int(get_text_element(fumen, "levelDecimal"))
             fumen_element["level"] = level + (levelDecimal/100)
+            fumen_element["difficultyName"] = get_text_element(fumen, "type/data")  # str is the enum key (ID_00), data the label
+            fumen_element["file"] = get_text_element(fumen, "file/path")
+            fumen_element["notesDesigner"] = get_text_element(fumen, "notesDesigner")
+            fumen_element["defaultBpm"] = get_int(fumen, "defaultBpm")
             json_data["charts"].append(fumen_element)
 
     return json_data

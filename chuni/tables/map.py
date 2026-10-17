@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from global_utils import get_text_element
+from chuni.utils import get_int, get_ref, get_text_element, safe_find
 
 
 def parse_map(file: str) -> dict:
@@ -17,6 +17,21 @@ def parse_map(file: str) -> dict:
         json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
         json_data["name"] = get_text_element(root, "name/str")
         json_data["ddsMapId"] = get_text_element(root, "infos/MapDataAreaInfo/ddsMapName/id")
+        json_data["mapType"] = get_int(root, "mapType")
+        json_data["stopMapArea"] = get_ref(root, "stopMapAreaName")
+        json_data["stopUnlockEvent"] = get_ref(root, "stopUnlockEventName")
+
+        areas = []
+        for info in safe_find(root, "infos").iter("MapDataAreaInfo"):
+            area = {
+                key: get_ref(info, f"{key}Name")
+                for key in ("mapArea", "ddsMap", "music", "chara", "skill", "trophy", "normalGauge", "challengeGauge")
+            }
+            area["challengeRating"] = {
+                dif: get_int(info, f"challengeRating/{dif}") for dif in ("advanced", "expert", "master")
+            }
+            areas.append(area)
+        json_data["areas"] = areas
 
     return json_data
 
