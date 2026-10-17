@@ -93,7 +93,7 @@ def parse_skill(file: str) -> dict:
         json_data["id"] = int(get_text_element(root, "name/id"))
         json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
         json_data["name"] = get_text_element(root, "name/str")
-        json_data["category"] = int(get_text_element(root, "category"))
+        json_data["category"] = int(get_text_element(root, "category/id" if root.find("category/id") is not None else "category"))
         json_data["rareType"] = int(get_text_element(root, "rareType"))
         json_data["counterType"] = int(get_text_element(root, "counterType"))
         json_data["maxLv"] = int(get_text_element(root, "maxLv"))

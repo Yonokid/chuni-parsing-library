@@ -15,7 +15,7 @@ def parse_ticket(file: str) -> dict:
         json_data["name"] = get_text_element(root, "name/str")
         json_data["type"] = int(get_text_element(root, "type"))
         json_data["stockMaxNum"] = int(get_text_element(root, "stockMaxNum"))
-        json_data["explainText"] = get_text_element(root, "explainText")
+        json_data["explainText"] = root.findtext("explainText", "")
         # PLUS+ nests the values in one <substances> child per ticket type, ordered by type
         substances = root.find("substances")
         if substances is not None:
@@ -23,7 +23,8 @@ def parse_ticket(file: str) -> dict:
             src = kinds[int(get_text_element(substances, "type"))]
         else:
             src = root
-        for key in ("valueDay", "valueDayRaw", "valueUse", "valueUseRaw", "valueBoost", "valueBoostRaw"):
+        for key in ("valueDay", "valueDayRaw", "valueUse", "valueUseRaw", "valueBoost", "valueBoostRaw",
+                    "valuePlusRaw", "valueMultiple", "valueMultipleRaw", "addRankLimit"):
             json_data[key] = int(src.findtext(key, "0"))
         json_data["priority"] = int(get_text_element(root, "priority"))
 

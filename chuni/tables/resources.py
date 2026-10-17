@@ -20,7 +20,7 @@ def parse_iniFile(file: str) -> dict:
     data["iniFile"] = get_text_element(root, "iniFile/path")
     ini_path = os.path.join(os.path.dirname(file), data["iniFile"])
     if os.path.exists(ini_path):
-        ini = configparser.ConfigParser()
+        ini = configparser.ConfigParser(strict=False)  # 1.10 JudgeTiming ini repeats [MINE]
         ini.optionxform = str
         ini.read(ini_path, encoding="utf-8-sig")
         data["values"] = {

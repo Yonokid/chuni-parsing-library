@@ -79,7 +79,10 @@ INT_ENUMS = {
     "mapArea.grid.type": {1: "Start", 2: "Goal", 3: "Normal"},
     # Named by the items that use them. Banners (sprites ticketType_N) exist for 0/1/4/5/7 only.
     "ticket.type": {0: "CHUNITHM-NET access", 1: "Character rank boost", 2: "Player Lv boost",
-                    3: "Challenge song all-difficulty play", 4: "MASTER play", 6: "Extra track"},
+                    3: "Challenge song all-difficulty play", 4: "MASTER play", 5: "WORLD'S END play", 6: "Extra track",
+                    7: "Map progress boost", 8: "Premium", 9: "Character rank limit unlock"},
+    # RewardSubsubstance.type: which of gamePoint/ticket/trophy/chara/skill/namePlate is set (music, 6, is unused).
+    "reward.type": {0: "Game points", 1: "Ticket", 2: "Trophy", 3: "Character", 4: "Skill", 5: "Name plate", 6: "Music"},
     "map.mapType": {0: "Normal", 1: "Endless", 2: "Event"},
     "gameTable.tableType": {0: "Player level", 1: "Player EXP bonus", 2: "Character rank", 3: "NG words",
                             4: "Name entry A-Z", 5: "Name entry a-z", 6: "Name entry numbers", 7: "Name entry marks",
@@ -92,7 +95,9 @@ INT_ENUMS = {
     # CHU_UI_play_skill_00_v10.dds labels DEFENSE/SUPPORT/BOOST/DANGER SKILL + an unlabelled handshake icon;
     # matched by content: 1 = heal skills, 2 = gauge boosts, 3 = deathPenalty/strict-judge risks,
     # 4 = guards, 5 = chain skills (handshake). 0 is only used by スキルなし.
-    "skill.category": {0: "None", 1: "Support", 2: "Boost", 3: "Danger", 4: "Defense", 5: "Handshake (unlabelled)"},
+    "skill.category": {0: "None", 1: "Support", 2: "Boost", 3: "Danger", 4: "Defense", 5: "Handshake (unlabelled)",
+                       # 1.10 splits the game's own categories (Boost1-4, Danger1-3)
+                       6: "Boost 2", 7: "Boost 3", 8: "Boost 4", 9: "Danger 2", 10: "Danger 3"},
 }
 
 def build_enums(db_dir: str) -> dict:

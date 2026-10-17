@@ -20,8 +20,11 @@ def parse_mapArea(file: str) -> dict:
             grid_element["index"] = int(get_text_element(grid, "index"))
             grid_element["displayType"] = int(get_text_element(grid, "displayType"))
             grid_element["type"] = int(get_text_element(grid, "type"))
-            grid_element["gamePoint"] = int(get_text_element(grid, "gamePoint/point"))
-            grid_element["ticket"] = get_ref(grid, "ticket/ticketName")
+            if grid.find("reward") is not None:  # 1.10+: grids point at a reward
+                grid_element["reward"] = get_ref(grid, "reward/rewardName")
+            else:
+                grid_element["gamePoint"] = int(get_text_element(grid, "gamePoint/point"))
+                grid_element["ticket"] = get_ref(grid, "ticket/ticketName")
             json_data["grids"].append(grid_element)
 
     return json_data

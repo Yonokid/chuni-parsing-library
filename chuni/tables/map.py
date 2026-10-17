@@ -23,9 +23,10 @@ def parse_map(file: str) -> dict:
 
         areas = []
         for info in safe_find(root, "infos").iter("MapDataAreaInfo"):
+            # 1.10+ replaced chara/skill/trophy with a single reward
             area = {
-                key: get_ref(info, f"{key}Name")
-                for key in ("mapArea", "ddsMap", "music", "chara", "skill", "trophy", "normalGauge", "challengeGauge")
+                key: get_ref(info, f"{key}Name") if info.find(f"{key}Name") is not None else None
+                for key in ("mapArea", "ddsMap", "music", "reward", "chara", "skill", "trophy", "normalGauge", "challengeGauge")
             }
             area["challengeRating"] = {
                 dif: get_int(info, f"challengeRating/{dif}") for dif in ("advanced", "expert", "master")

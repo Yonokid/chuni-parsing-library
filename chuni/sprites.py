@@ -20,6 +20,31 @@ SPRITES = {
         "skillCategory_4": (504, 4, 604, 104),    # Defense (shield)
         "skillCategory_5": (504, 420, 604, 520),  # Handshake
     },
+    # 1.10 moved the skill category icons here: 158px cells, 159px pitch; row 0 = unlabelled, row 2 = tier III/IV.
+    "CHU_UI_Common_skill_00_v11.dds": {
+        "skillCategory_1": (159, 0, 317, 158),    # Support
+        "skillCategory_2": (0, 0, 158, 158),      # Boost1 (NORMAL I)
+        "skillCategory_3": (477, 0, 635, 158),    # Danger1 (HARD I)
+        "skillCategory_4": (318, 0, 476, 158),    # Defence (GUARD)
+        "skillCategory_5": (636, 0, 794, 158),    # Friendship (MATCHING)
+        "skillCategory_6": (795, 0, 953, 158),    # Boost2 (TARGET II)
+        "skillCategory_7": (0, 318, 158, 476),    # Boost3 (TECHNICAL III)
+        "skillCategory_8": (159, 318, 317, 476),  # Boost4 (MANIAC IV)
+        "skillCategory_9": (318, 318, 476, 476),  # Danger2 (ABSOLUTE II)
+        "skillCategory_10": (477, 318, 635, 476),  # Danger3 (CATASTROPHY III)
+    },
+    # 1.10 ticket banners: 384x156 at 156px pitch, two columns (second starts at x=386).
+    "CHU_UI_Common_ticket_00_v11.dds": {
+        "ticketType_0": (0, 0, 384, 156),
+        "ticketType_1": (0, 157, 384, 312),
+        "ticketType_2": (0, 313, 384, 468),    # PLAYER EXP BOOST
+        "ticketType_3": (0, 470, 384, 625),    # LEVEL FREE
+        "ticketType_4": (0, 626, 384, 781),    # MASTER PLAY
+        "ticketType_5": (0, 782, 384, 937),    # WORLD'S END PLAY
+        "ticketType_6": (386, 0, 770, 156),    # BONUS TRACK PRESENT
+        "ticketType_7": (386, 157, 770, 312),  # マップ進行
+        "ticketType_8": (386, 313, 770, 468),  # PREMIUM TRACK
+    },
     # ticket.type banners, 384x156 at 156px pitch in the left column. Types 2/3/6/8 have no banner in the atlas.
     "CHU_UI_Common_ticket_00.dds": {
         "ticketType_0": (0, 0, 384, 156),      # CHUNITHM-NET STANDARD

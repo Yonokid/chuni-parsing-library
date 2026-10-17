@@ -15,6 +15,7 @@ SEGMENTS = [
     ("shop", "Shop", "ShoppingCartIcon"),
     ("stage", "Stages", "ViewCarouselIcon"),
     ("ticket", "Tickets", "LocalActivityIcon"),
+    ("reward", "Rewards", "RedeemIcon"),
     ("chargeItem", "Charge Items", "PaymentsIcon"),
 ]
 

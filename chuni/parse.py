@@ -3,6 +3,7 @@ import os
 
 from chuni.tables.chara import copy_chara_image, parse_chara
 from chuni.tables.chargeItem import parse_chargeItem
+from chuni.tables.reward import parse_reward
 from chuni.enums import build_enums
 from chuni.navigation import write_navigation
 from chuni.tables.event import copy_ddsBanner, copy_eventBanner, parse_event
@@ -166,6 +167,7 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "trophy", parse_trophy, None, "trophy")
     process_data(directory, alt_dir, output_dir, "ticket", parse_ticket, None, "ticket")
     process_data(directory, alt_dir, output_dir, "chargeItem", parse_chargeItem, None, "chargeItem")
+    process_data(directory, alt_dir, output_dir, "reward", parse_reward, None, "reward")
     process_data(directory, alt_dir, output_dir, "present", parse_present, None, "present")
     process_data(directory, alt_dir, output_dir, "stage", parse_stage, copy_stage_files, "stage")
     process_data(directory, alt_dir, output_dir, "event", parse_event, copy_ddsBanner, "ddsBanner")
