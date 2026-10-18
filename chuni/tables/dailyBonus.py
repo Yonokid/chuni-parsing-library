@@ -5,7 +5,7 @@ from chuni.utils import get_bool, get_int, get_ref_list, get_text_element, get_v
 # effect block -> value tags read when <isEnabled> is true
 EFFECTS = {
     "mapGridData": ["addValue"],
-    "charaExpData": ["addValue"],
+    "charaExpData": ["addValue", "multiplyValue"],  # multiplyValue in 2.15
     "avatarPointData": ["multiplyValue"],
     "avatarChanceData": [],
     "duelCriticalData": ["criticalRateOnNormal", "criticalRateOnTodome"],
@@ -24,7 +24,7 @@ def parse_dailyBonus(file: str) -> dict:
         "name": get_text_element(root, "name/str"),
         "text": line_break(root.findtext("text")),
         "effects": {
-            tag: {k: get_int(root, f"{tag}/{k}") for k in keys}
+            tag: {k: get_int(root, f"{tag}/{k}") for k in keys if root.find(f"{tag}/{k}") is not None}
             for tag, keys in EFFECTS.items() if get_bool(root, f"{tag}/isEnabled")
         },
     }

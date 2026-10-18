@@ -28,6 +28,9 @@ def parse_ticket(file: str) -> dict:
             json_data[key] = int(src.findtext(key, "0"))
         if root.find("playRewardPoint") is not None:  # 2.10+
             json_data["playRewardPoint"] = int(get_text_element(root, "playRewardPoint"))
+        for key in ("chargeBonusAvatar", "battlePointCoefMonthly", "battlePointCoefEmperor"):  # 2.15+
+            if root.find(key) is not None:
+                json_data[key] = int(get_text_element(root, key))
         json_data["priority"] = int(get_text_element(root, "priority"))
 
     return json_data

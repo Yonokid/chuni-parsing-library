@@ -17,7 +17,7 @@ def parse_avatarAccessory(file: str) -> dict:
         "disableFlag": get_bool(root, "disableFlag"),
         "sortName": get_text_element(root, "sortName"),
         "category": get_int(root, "category"),
-        "layerIndex": get_int(root, "layerIndex"),
+        "layerIndex": int(root.findtext("layerIndex", "0")),  # dropped in 2.15
         "defaultHave": get_bool(root, "defaultHave"),
         "explainText": get_text_element(root, "explainText"),
         "priority": get_int(root, "priority"),
