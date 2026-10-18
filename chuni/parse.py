@@ -19,6 +19,7 @@ from chuni.tables.chara import copy_chara_image, parse_chara
 from chuni.tables.aimeCollab import copy_aimeCollab_image, parse_aimeCollab
 from chuni.tables.achievementPattern import parse_achievementPattern
 from chuni.tables.chargeItem import parse_chargeItem
+from chuni.tables.unlockChallenge import parse_unlockChallenge
 from chuni.tables.course import embed_course_rules, parse_course
 from chuni.tables.courseRule import parse_courseRule
 from chuni.tables.duel import parse_duel
@@ -248,6 +249,7 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "mapBonus", parse_mapBonus, None, "mapBonus")
     process_data(directory, alt_dir, output_dir, "cmission", parse_cmission, None, "cmission")
     process_data(directory, alt_dir, output_dir, "cmissionInfo", parse_cmissionInfo, None, "cmissionInfo")
+    process_data(directory, alt_dir, output_dir, "unlockChallenge", parse_unlockChallenge, None, "unlockChallenge")
     process_data(directory, alt_dir, output_dir, "aimeCollab", parse_aimeCollab, copy_aimeCollab_image, "aimeCollab")
     process_data(directory, alt_dir, output_dir, "course", parse_course, None, "course")
     process_data(directory, alt_dir, output_dir, "courseRule", parse_courseRule, None, "courseRule")

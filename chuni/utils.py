@@ -153,6 +153,19 @@ def parse_condition(cond: ET.Element) -> dict:
     if have_trophies:
         data["haveTrophies"] = have_trophies
 
+    if cond.find("completeData") is not None:  # 2.30+: clear every song of a release tag at this rank / all-justice
+        complete = {}
+        tag = get_ref(cond, "completeData/releaseTagName")
+        if tag:
+            complete["releaseTag"] = tag
+        rank = text_or_none(cond, "completeData/scoreRank/str")
+        if rank:
+            complete["scoreRank"] = rank
+        if get_text_element(cond, "completeData/allJustice") == "true":
+            complete["allJustice"] = True
+        if complete:
+            data["complete"] = complete
+
     region = text_or_none(cond, "travelData/japanRegionID/data")
     if region:
         data["japanRegion"] = region

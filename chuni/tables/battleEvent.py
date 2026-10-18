@@ -14,6 +14,7 @@ def parse_battleEvent(file: str) -> dict:
         "type": get_int(root, "type"),
         "scoreDivVal": get_int(root, "scoreDivVal"),
         "fumenLevelDivVal": get_int(root, "fumenLevelDivVal"),
+        **({"netBattleModeRateVal": get_int(root, "netBattleModeRateVal")} if root.find("netBattleModeRateVal") is not None else {}),  # 2.30+
         # points awarded per placement, 1st to last
         "rankPoints": [get_int(d, "val") for d in root.iterfind("rankPointDataList/RankPointData")],
     }

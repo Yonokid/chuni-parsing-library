@@ -7,7 +7,8 @@ def parse_courseRule(file: str) -> dict:
     with open(file, "r", encoding="utf-8") as xml_file:
         root = ET.parse(xml_file).getroot()
 
-    walls = ("startFieldWallPos", "nearMaxFieldWallPos", "farMaxFieldWallPos", "recoveryFieldWallMove", "damageFieldWallMove")
+    walls = ("targetDifBasic", "targetDifAdvanced", "targetDifExpert", "targetDifMaster", "targetDifUltima",  # 2.30+
+             "startFieldWallPos", "nearMaxFieldWallPos", "farMaxFieldWallPos", "recoveryFieldWallMove", "damageFieldWallMove")
     return {
         **{k: get_int(root, k) for k in walls if root.find(k) is not None},  # 2.10+
         "id": int(get_text_element(root, "name/id")),

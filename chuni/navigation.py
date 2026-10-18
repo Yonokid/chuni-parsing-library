@@ -36,10 +36,15 @@ SEGMENTS = [
     ("teamPresent", "Team Presents", "GroupsIcon"),
     ("teamPresentPreset", "Team Present Sets", "PlaylistAddCheckIcon"),
     ("cmission", "Missions", "AssignmentIcon"),
+    ("unlockChallenge", "Unlock Challenges", "LockOpenIcon"),
 ]
 
+# segment -> segment whose presence means it was removed (output is a merged snapshot, so old json lingers)
+REMOVED_BY = {"duel": "cmission"}  # duels were replaced by missions in 2.20.00
+
 def write_navigation(output_dir: str) -> None:
+    has = lambda s: os.path.exists(os.path.join(output_dir, s, f"{s}.json"))
     entries = [{"segment": s, "title": t, "icon": i} for s, t, i in SEGMENTS
-               if os.path.exists(os.path.join(output_dir, s, f"{s}.json"))]
+               if has(s) and not (s in REMOVED_BY and has(REMOVED_BY[s]))]
     with open(os.path.join(output_dir, "navigation.json"), "w", encoding="utf-8") as f:
         json.dump(entries, f, indent=2, ensure_ascii=False)
