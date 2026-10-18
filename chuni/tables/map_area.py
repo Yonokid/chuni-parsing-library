@@ -13,6 +13,9 @@ def parse_mapArea(file: str) -> dict:
         json_data["id"] = int(get_text_element(root, "name/id"))
         json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
+        if root.find("hiddenType") is not None:  # 2.20+
+            json_data["hiddenType"] = int(get_text_element(root, "hiddenType"))
+            json_data["unlockText"] = get_text_element(root, "unlockText")
         if root.find("mapBonusName") is not None:  # older versions have no area bonus
             json_data["mapBonus"] = get_ref(root, "mapBonusName")
         if root.find("mapAreaBoostType") is not None:  # 1.45+

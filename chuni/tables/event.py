@@ -40,6 +40,7 @@ SUBSTANCES = {
     11: ("rightsInfo", lambda el: {"rights": get_ref_list(el, "rightsNames/list")}),
     12: ("battleReward", lambda el: {"battleReward": get_ref(el, "battleRewardName")}),
     13: ("dailyBonusPreset", lambda el: {"dailyBonusPreset": get_ref(el, "dailyBonusPresetName")}),  # 2.05
+    14: ("cmission", lambda el: {"cmission": get_ref(el, "cmissionName")}),  # 2.20
 }
 # 2.10: type 12 holds a playRewardSet instead of a battleReward
 PLAY_REWARD_SET = ("playRewardSet", lambda el: {"playRewardSet": get_ref(el, "playRewardSetName")})

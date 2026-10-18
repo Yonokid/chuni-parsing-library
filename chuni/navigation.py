@@ -35,6 +35,7 @@ SEGMENTS = [
     ("dailyBonusPreset", "Daily Bonus Sets", "CalendarMonthIcon"),
     ("teamPresent", "Team Presents", "GroupsIcon"),
     ("teamPresentPreset", "Team Present Sets", "PlaylistAddCheckIcon"),
+    ("cmission", "Missions", "AssignmentIcon"),
 ]
 
 def write_navigation(output_dir: str) -> None:

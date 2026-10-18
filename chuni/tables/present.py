@@ -17,7 +17,7 @@ def parse_present(file: str) -> dict:
         json_data["gamePoint"] = int(get_text_element(root, "gamePoint"))
         for key in ("ticket", "chara", "skill", "trophy"):
             json_data[f"{key}"] = get_ref(root, f"{key}Name")
-        for key in ("skillSeed", "avatarAccessory", "frame", "symbolChat"):  # 2.00+
+        for key in ("skillSeed", "avatarAccessory", "frame", "symbolChat", "ultimaScore"):  # 2.00+ (ultimaScore 2.20+)
             if root.find(f"{key}Name") is not None:
                 json_data[key] = get_ref(root, f"{key}Name")
 

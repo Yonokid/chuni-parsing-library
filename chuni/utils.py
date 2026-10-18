@@ -168,3 +168,8 @@ def parse_conditions(root: ET.Element) -> list:
         parse_condition(cond)
         for cond in safe_find(root, "normCondition/conditions").iter("ConditionSubData")
     ]
+
+
+def xml_name(data_type: str) -> str:
+    """File name of a data type's per-item XML: Music.xml for music, but CMission.xml for cmission."""
+    return {"cmission": "CMission", "cmissionInfo": "CMissionInfo"}.get(data_type, f"{data_type[0].upper()}{data_type[1:]}") + ".xml"

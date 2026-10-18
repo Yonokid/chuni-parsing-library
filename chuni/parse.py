@@ -1,6 +1,6 @@
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 from chuni.tables.avatarAccessory import copy_avatarAccessory_image, parse_avatarAccessory
 from chuni.tables.avatarAccessoryGacha import parse_avatarAccessoryGacha
@@ -32,6 +32,8 @@ from chuni.navigation import write_navigation
 from chuni.tables.event import copy_ddsBanner, copy_eventBanner, parse_event
 from chuni.tables.map import copy_ddsMap, embed_map_details, parse_map
 from chuni.tables.mapBonus import parse_mapBonus
+from chuni.tables.cmission import parse_cmission, parse_cmissionInfo
+from chuni.utils import xml_name
 from chuni.tables.map_area import parse_mapArea
 from chuni.tables.movie import copy_movie, parse_movie
 from chuni.tables.music import copy_cueFile, copy_jacket, is_worlds_end, parse_music
@@ -77,6 +79,20 @@ def merge_worlds_end(songs: list) -> list:
         songs.remove(song)
     return songs
 
+def _copy_job(copy_func, path: str, item: dict, out: str) -> dict:
+    """Runs in a worker process: copy_func fills fields on item (textures, models...), so ship it back."""
+    copy_func(path, item, out)
+    return item
+
+
+def sibling_options(directory: str) -> list:
+    """Other Option/AXXX dirs next to this one: 2.20 maps/characters reference art shipped in a different Option."""
+    parent = os.path.dirname(os.path.normpath(directory))
+    if os.path.basename(parent) != "Option":
+        return []
+    return [os.path.join(parent, d) for d in sorted(os.listdir(parent)) if os.path.join(parent, d) != os.path.normpath(directory)]
+
+
 def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse_func, copy_func, related_dir_name: str) -> None:
     """
     Processes data (music, chara, movie) from the given directory.
@@ -113,11 +129,15 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
     audio_jobs = []
     if data_type == "music":  # vgmstream/ffmpeg dominate runtime: run them concurrently, errors reported below
         copy_audio = copy_func
-        copy_func = lambda path, song, out: audio_jobs.append((song["id"], pool.submit(copy_audio, path, song, out)))
+        copy_func = lambda path, song, out: audio_jobs.append((song["id"], pool.submit(copy_audio, path, song, out), None))
+    elif data_type in ("chara", "stage"):  # webp encode / glb export are CPU-bound: one process per item
+        pool = ProcessPoolExecutor()
+        copy_cpu = copy_func
+        copy_func = lambda path, item, out: audio_jobs.append((item["id"], pool.submit(_copy_job, copy_cpu, path, item, out), item))
     for item in os.scandir(data_dir):
         if not item.is_dir():
             continue
-        xml_path = os.path.join(data_dir, item.name, f"{data_type[0].upper()}{data_type[1:]}.xml")
+        xml_path = os.path.join(data_dir, item.name, xml_name(data_type))
         try:
             parsed_data = parse_func(xml_path)
             new_data.append(parsed_data)
@@ -140,9 +160,13 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                 path = os.path.join(directory, related_dir_name, f"{related_dir_name}{id.zfill(6)}")
                 if os.path.exists(path):
                     copy_func(path, parsed_data, data_output_dir)
-                elif alt_dir is not None:
-                    path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{id.zfill(6)}")
-                    copy_func(path, parsed_data, data_output_dir)
+                else:
+                    name = f"{related_dir_name}{id.zfill(6)}"
+                    dirs = [d for d in (alt_dir, *sibling_options(directory)) if d is not None]
+                    candidates = [os.path.join(d, related_dir_name, name) for d in dirs]
+                    if candidates:  # none existing: copy_func reports the first as missing
+                        path = next((c for c in candidates if os.path.exists(c)), candidates[0])
+                        copy_func(path, parsed_data, data_output_dir)
             elif data_type in ("namePlate", "aimeCollab", "mapIcon", "systemVoice", "avatarAccessory", "frame", "gacha"):
                 path = os.path.join(directory, data_type, item.name)
                 copy_func(path, parsed_data, data_output_dir)
@@ -168,7 +192,7 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
             elif data_type == "map":
                 name = f"{related_dir_name}{parsed_data["ddsMapId"].zfill(8)}"
                 # Option dirs spell the folder "ddsmap" (1.45), which matters on case-sensitive filesystems
-                candidates = [os.path.join(d, folder, name) for d in (directory, alt_dir) if d is not None for folder in (related_dir_name, related_dir_name.lower())]
+                candidates = [os.path.join(d, folder, name) for d in (directory, alt_dir, *sibling_options(directory)) if d is not None for folder in (related_dir_name, related_dir_name.lower())]
                 path = next((c for c in candidates if os.path.exists(c)), candidates[-1])
                 copy_func(path, parsed_data, data_output_dir)
             elif data_type == "stage":
@@ -178,9 +202,11 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
         except (FileNotFoundError, IOError, ValueError) as e:
             print(f"Error processing {data_type} {item.name}: {e}")
 
-    for song_id, job in audio_jobs:
+    for song_id, job, item in audio_jobs:
         try:
-            job.result()
+            result = job.result()
+            if item is not None:
+                item.update(result)
         except (FileNotFoundError, IOError, ValueError) as e:
             print(f"Error processing {data_type} {song_id}: {e}")
     pool.shutdown()
@@ -218,6 +244,8 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "shop", parse_shop, None, "shop")
     process_data(directory, alt_dir, output_dir, "mapArea", parse_mapArea, None, "mapArea")
     process_data(directory, alt_dir, output_dir, "mapBonus", parse_mapBonus, None, "mapBonus")
+    process_data(directory, alt_dir, output_dir, "cmission", parse_cmission, None, "cmission")
+    process_data(directory, alt_dir, output_dir, "cmissionInfo", parse_cmissionInfo, None, "cmissionInfo")
     process_data(directory, alt_dir, output_dir, "aimeCollab", parse_aimeCollab, copy_aimeCollab_image, "aimeCollab")
     process_data(directory, alt_dir, output_dir, "course", parse_course, None, "course")
     process_data(directory, alt_dir, output_dir, "courseRule", parse_courseRule, None, "courseRule")

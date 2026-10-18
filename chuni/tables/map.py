@@ -23,6 +23,9 @@ def parse_map(file: str) -> dict:
             json_data["mapFilter"] = get_ref(root, "mapFilterID")
         if root.find("netDispPeriod") is not None:
             json_data["netDispPeriod"] = get_bool(root, "netDispPeriod")
+        if root.find("hiddenType") is not None:  # 2.20+: secret maps/areas, unlockText is the hint shown
+            json_data["hiddenType"] = get_int(root, "hiddenType")
+            json_data["unlockText"] = get_text_element(root, "unlockText")
         json_data["stopMapArea"] = get_ref(root, "stopMapAreaName")
         json_data["stopUnlockEvent"] = get_ref(root, "stopUnlockEventName")
         if root.find("categoryName") is not None:  # 2.00+: pages of areas, stop gates on a page / release event instead

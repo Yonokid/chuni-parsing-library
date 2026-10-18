@@ -26,6 +26,8 @@ def parse_ticket(file: str) -> dict:
         for key in ("valueDay", "valueDayRaw", "valueUse", "valueUseRaw", "valueBoost", "valueBoostRaw",
                     "valuePlusRaw", "needExp", "addExp", "valueMultiple", "valueMultipleRaw", "addRankLimit"):
             json_data[key] = int(src.findtext(key, "0"))
+        if root.find("numChargeCredit") is not None:  # 2.20+
+            json_data["numChargeCredit"] = int(get_text_element(root, "numChargeCredit"))
         if root.find("playRewardPoint") is not None:  # 2.10+
             json_data["playRewardPoint"] = int(get_text_element(root, "playRewardPoint"))
         for key in ("chargeBonusAvatar", "battlePointCoefMonthly", "battlePointCoefEmperor"):  # 2.15+

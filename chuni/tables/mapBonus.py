@@ -2,8 +2,8 @@ import xml.etree.ElementTree as ET
 
 from chuni.utils import get_ref, get_text_element, get_version, safe_find
 
-# substance <type> picks which child block applies; order matches the type ids 0..8 (checked against the data)
-KINDS = ("chara", "charaWorks", "skill", "skillCategory", "music", "musicGenre", "musicWorks", "musicDif", "musicLv")
+# substance <type> picks which child block applies; order matches the type ids 0..9 (checked against the data)
+KINDS = ("chara", "charaWorks", "skill", "skillCategory", "music", "musicGenre", "musicWorks", "musicDif", "musicLv", "charaRank")
 
 
 def parse_mapBonus(file: str) -> dict:
@@ -22,12 +22,16 @@ def parse_mapBonus(file: str) -> dict:
             kind = KINDS[kind_id]
             block = safe_find(sub, kind)
             # the block's one StringID child (charaName, genreName, filterLv...) is what the bonus applies to
-            target = next(c for c in block if c.find("id") is not None and c.tag != "resourceVersion")
+            if kind == "charaRank":  # 2.20: target is a plain min rank, not a ref
+                target = {"id": int(get_text_element(block, "charaRank")), "name": block.findtext("explainText") or ""}
+            else:
+                child = next(c for c in block if c.find("id") is not None and c.tag != "resourceVersion")
+                target = get_ref(block, child.tag)
             json_data["substances"].append({
                 "type": kind_id,
                 "kind": kind,
                 "point": int(get_text_element(block, "point")),
-                "target": get_ref(block, target.tag),
+                "target": target,
             })
 
     return json_data

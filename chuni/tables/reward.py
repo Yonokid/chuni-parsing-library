@@ -26,6 +26,10 @@ def parse_reward(file: str) -> dict:
         for key in ("skillSeed", "avatarAccessory", "frame"):
             if sub.find(key) is not None:
                 json_data[key] = get_ref(sub, f"{key}/{key}Name")
+        if sub.find("symbolChat") is not None:  # 2.20+ (never set in shipped data)
+            json_data["symbolChat"] = get_ref(sub, "symbolChat/symbolChatName")
+        if sub.find("ultimaScore") is not None:
+            json_data["ultimaScore"] = get_ref(sub, "ultimaScore/musicName")
         for key in ("ticket", "trophy", "chara", "skill", "namePlate", "music", "mapIcon", "systemVoice"):
             json_data[key] = get_ref(sub, f"{key}/{key}Name")
 

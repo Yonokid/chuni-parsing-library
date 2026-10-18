@@ -90,6 +90,33 @@ SPRITES_2_00 = {
         "mapGoal": (97, 62, 185, 93),
         "mapBonus": (1017, 6, 1207, 194),  # pink MAP BONUS roundel
     },
+    # cmission iconType (77x78 tiles, row-major order differs from the ids) and unitType labels (2.20)
+    "CHU_UI_Mission_Box_00.dds": {
+        "missionIcon_0": (5, 4, 82, 82),  # course
+        "missionIcon_1": (5, 85, 82, 163),  # ADVANCED
+        "missionIcon_2": (5, 165, 82, 243),  # BASIC
+        "missionIcon_3": (5, 245, 82, 323),  # music
+        "missionIcon_4": (86, 4, 163, 82),  # crown
+        "missionIcon_5": (86, 85, 163, 163),  # EXPERT
+        "missionIcon_6": (86, 165, 163, 243),  # WORLD'S END
+        "missionIcon_7": (86, 245, 163, 323),  # MASTER
+        "missionIcon_8": (167, 4, 244, 82),  # ULTIMA
+        "missionIcon_9": (247, 245, 324, 323),  # battle
+        "missionIcon_10": (167, 165, 244, 243),  # miss
+        "missionIcon_11": (167, 245, 244, 323),  # map step
+        "missionIcon_12": (167, 85, 244, 163),  # photon
+        "missionIcon_13": (247, 165, 324, 243),  # chara rank
+        "missionIcon_14": (247, 85, 324, 163),  # player Lv
+        "missionIcon_15": (247, 4, 324, 82),  # chain
+        "missionIcon_16": (327, 4, 404, 82),  # credit
+        "missionUnit_0": (120, 449, 137, 466),
+        "missionUnit_1": (234, 449, 264, 466),
+        "missionUnit_2": (5, 449, 57, 466),
+        "missionUnit_3": (62, 449, 107, 466),
+        "missionUnit_4": (292, 449, 312, 466),
+        "missionUnit_5": (177, 449, 194, 466),
+        "missionUnit_6": (350, 449, 369, 466),
+    },
 }
 
 def export_sprites(texture_dir: str, output_dir: str, sprites: dict = SPRITES) -> list[str]:

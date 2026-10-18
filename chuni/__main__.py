@@ -7,4 +7,5 @@ import sys
 
 from chuni.parse import process_directory
 
-process_directory(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)
+if __name__ == "__main__":  # guard: process-pool workers re-import this module
+    process_directory(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)
