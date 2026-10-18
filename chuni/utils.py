@@ -17,7 +17,9 @@ def get_text_element(element: ET.Element, tag: str):
     return line_break(text_element)
 
 def get_ref(element: ET.Element, tag: str):
-    """Resolves a <tag><id>/<str> cross-reference to another asset. None if unset (id -1)."""
+    """Resolves a <tag><id>/<str> cross-reference to another asset. None if unset (id -1) or absent."""
+    if element.find(tag) is None:  # e.g. mapIcon/systemVoice `works` dropped in 1.40
+        return None
     id_value = int(get_text_element(element, f"{tag}/id"))
     if id_value < 0:
         return None
