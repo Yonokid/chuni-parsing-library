@@ -17,7 +17,7 @@ def parse_reward(file: str) -> dict:
         sub = safe_find(root, "substances/list/RewardSubstanceData")
         json_data["type"] = get_int(sub, "type")
         json_data["gamePoint"] = get_int(sub, "gamePoint/gamePoint")
-        for key in ("ticket", "trophy", "chara", "skill", "namePlate", "music"):
+        for key in ("ticket", "trophy", "chara", "skill", "namePlate", "music", "mapIcon", "systemVoice"):
             json_data[key] = get_ref(sub, f"{key}/{key}Name")
 
     return json_data

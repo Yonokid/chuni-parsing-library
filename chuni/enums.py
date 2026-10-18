@@ -84,8 +84,9 @@ INT_ENUMS = {
                     7: "Map progress boost", 8: "Premium", 9: "Character rank limit unlock",
                     10: "Map fixed squares boost"},  # "+10 squares for 3 songs"
     # RewardSubsubstance.type: which of gamePoint/ticket/trophy/chara/skill/namePlate is set (music, 6, is unused).
-    "reward.type": {0: "Game points", 1: "Ticket", 2: "Trophy", 3: "Character", 4: "Skill", 5: "Name plate", 6: "Music"},
-    "map.mapType": {0: "Normal", 1: "Endless", 2: "Event"},
+    # 7/8 (1.40): mapIcon/systemVoice set, seen in the duel rewards.
+    "reward.type": {0: "Game points", 1: "Ticket", 2: "Trophy", 3: "Character", 4: "Skill", 5: "Name plate", 6: "Music", 7: "Map icon", 8: "System voice"},
+    "map.mapType": {0: "Normal", 1: "Endless", 2: "Event", 3: "Episode"},  # 3 (1.40): "AMAZON ep. I-VII/EX" maps
     "gameTable.tableType": {0: "Player level", 1: "Player EXP bonus", 2: "Character rank", 3: "NG words",
                             4: "Name entry A-Z", 5: "Name entry a-z", 6: "Name entry numbers", 7: "Name entry marks",
                             8: "External characters", 9: "Advertise update date"},
