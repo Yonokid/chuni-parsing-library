@@ -36,6 +36,7 @@ SUBSTANCES = {
     7: ("course", lambda el: {"courses": get_ref_list(el, "courseNames/list")}),
     8: ("quest", lambda el: {"quests": get_ref_list(el, "questNames/list")}),
     9: ("duel", lambda el: {"duel": get_ref(el, "duelName")}),
+    10: ("changeSurfBoardUI", lambda el: {"value": get_int(el, "value")}),
 }
 
 

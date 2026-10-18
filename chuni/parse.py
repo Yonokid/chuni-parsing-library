@@ -153,12 +153,11 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                     banner_path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{parsed_data["ddsBannerId"].zfill(8)}")
                     copy_func(banner_path, parsed_data, data_output_dir)
             elif data_type == "map":
-                path = os.path.join(directory, related_dir_name, f"{related_dir_name}{parsed_data["ddsMapId"].zfill(8)}")
-                if os.path.exists(path):
-                    copy_func(path, parsed_data, data_output_dir)
-                elif alt_dir is not None:
-                    path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{parsed_data["ddsMapId"].zfill(8)}")
-                    copy_func(path, parsed_data, data_output_dir)
+                name = f"{related_dir_name}{parsed_data["ddsMapId"].zfill(8)}"
+                # Option dirs spell the folder "ddsmap" (1.45), which matters on case-sensitive filesystems
+                candidates = [os.path.join(d, folder, name) for d in (directory, alt_dir) if d is not None for folder in (related_dir_name, related_dir_name.lower())]
+                path = next((c for c in candidates if os.path.exists(c)), candidates[-1])
+                copy_func(path, parsed_data, data_output_dir)
             elif data_type == "stage":
                 path = os.path.join(directory, data_type, item.name)
                 copy_func(path, parsed_data, data_output_dir)
