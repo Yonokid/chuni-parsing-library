@@ -63,7 +63,8 @@ INT_ENUMS = {
     "skill.substance.type": {0: "gaugeAssist", 1: "gaugeKeep", 2: "damageGuard", 3: "deathPenalty",
                              4: "changeJudgeIni", 5: "changeJudgeResult", 6: "changeSpeed", 7: "changeImg"},
     # EventData.substances.type: see event.SUBSTANCES.
-    "event.substance.type": {0: "flag", 1: "information", 2: "map", 3: "music", 4: "advertiseMovie", 5: "recommendMusic", 6: "release", 7: "course", 8: "quest", 9: "duel", 10: "changeSurfBoardUI", 11: "rightsInfo", 12: "battleReward"},
+    # 10: in 2.05 the one type-10 event fills avatarAccessoryGacha (kind "avatarAccessoryGacha"), not changeSurfBoardUI.
+    "event.substance.type": {0: "flag", 1: "information", 2: "map", 3: "music", 4: "advertiseMovie", 5: "recommendMusic", 6: "release", 7: "course", 8: "quest", 9: "duel", 10: "changeSurfBoardUI", 11: "rightsInfo", 12: "battleReward", 13: "dailyBonusPreset"},
     # Skill explain texts: award 1/2/3 skills say FULL COMBO / FULL CHAIN / ALL JUSTICE (not the ScoreAward table order).
     "skill.timing.award": {0: "None", 1: "FULL COMBO", 2: "FULL CHAIN", 3: "ALL JUSTICE"},
     # Skill explain texts: scene 1 "ゲーム開始時", 2 "ゲーム終了時"; the only scene-3 skill (乙女街道) does both.
@@ -114,7 +115,9 @@ INT_ENUMS_2_00 = {
     "chara.rank.type": {1: "Skill seed", 2: "Flavor text"},
     # Gem icons of CHU_UI_SkillData_00.dds, named by the skills that use each category.
     "skill.category": {0: "None", 1: "Guard", 2: "Support", 3: "Boost", 4: "Combo", 5: "A-Break", 6: "Judge", 7: "Judge+",
-                       8: "Absolute", 9: "Absolute+", 10: "Catastrophy", 11: "Unlimited", 12: "Unlimited+"},
+                       8: "Absolute", 9: "Absolute+", 10: "Catastrophy", 11: "Unlimited", 12: "Unlimited+",
+                       # 2.05: one skill each (絆・限界突破の証, キャンペーンブースト); icons UNLIMITED++ and CAMPAIGN
+                       13: "Unlimited++", 14: "Campaign"},
     # AvatarAccessory.category: DMY_Avatar* textures are Wear/Head/Face/Skin/Item/Front/Back; 4 vs 6 and 7 are unconfirmed
     # (1/2/3/5 match the item names, 6 is the only layerIndex 1).
     "avatarAccessory.category": {1: "Wear", 2: "Head", 3: "Face", 4: "Skin", 5: "Item", 6: "Front", 7: "Back"},

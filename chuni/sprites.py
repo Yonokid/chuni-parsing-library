@@ -39,7 +39,7 @@ SPRITES = {
     # 2.00 skill category gems: 3 columns x 212px pitch; the label-only (no dark tag) squares, in skill.category order.
     "CHU_UI_SkillData_00.dds": {
         f"skillCategory_{i}": (212 * c, 212 * r, 212 * c + 210, 212 * r + 210)
-        for i, (c, r) in enumerate([(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8), (1, 0), (1, 1), (2, 3), (2, 4)])
+        for i, (c, r) in enumerate([(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6), (0, 7), (0, 8), (1, 0), (1, 1), (2, 3), (2, 4), (2, 7), (3, 7)])
     },
     # 1.10 ticket banners: 384x156 at 156px pitch, two columns (second starts at x=386).
     "CHU_UI_Common_ticket_00_v11.dds": {
