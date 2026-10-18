@@ -4,7 +4,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 from chuni.tables.avatarAccessory import copy_avatarAccessory_image, parse_avatarAccessory
 from chuni.tables.avatarAccessoryGacha import parse_avatarAccessoryGacha
+from chuni.tables.battleRatingRange import parse_battleRatingRange
 from chuni.tables.battleReward import parse_battleReward
+from chuni.tables.dailyBonus import parse_dailyBonus, parse_dailyBonusPreset
 from chuni.tables.frame import copy_frame_image, parse_frame
 from chuni.tables.gacha import copy_gacha_image, parse_gacha
 from chuni.tables.symbolChat import parse_symbolChat
@@ -35,7 +37,7 @@ from chuni.tables.resources import (parse_gameTable, parse_gauge, parse_iniFile,
                        parse_ranking, parse_rightsInfo)
 from chuni.tables.shop import parse_shop
 from chuni.tables.skill import parse_skill
-from chuni.sprites import alias_ticket_banners_2_00, alias_trophy_rank_plates, export_sprites
+from chuni.sprites import SPRITES, SPRITES_2_00, alias_ticket_banners_2_00, alias_trophy_rank_plates, export_sprites
 from chuni.tables.stage import copy_stage_files, parse_stage
 from chuni.tables.ticket import parse_ticket
 from chuni.tables.trophy import parse_trophy
@@ -180,6 +182,11 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
             print(f"Error processing {data_type} {song_id}: {e}")
     pool.shutdown()
 
+    if data_type == "music":  # a re-parsed song must keep the WORLD'S END charts already folded into it
+        old_by_id = {s["id"]: s for s in existing_data}
+        for song in new_data:
+            have = {c.get("worldsEndId") for c in song["charts"]}
+            song["charts"] += [c for c in old_by_id.get(song["id"], {}).get("charts", []) if c.get("worldsEndId") not in have | {None}]
     combined_data = combine_unique_keys(existing_data, new_data, "id")
     if data_type == "music":
         combined_data = merge_worlds_end(combined_data)
@@ -222,6 +229,9 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "frame", parse_frame, copy_frame_image, "frame")
     process_data(directory, alt_dir, output_dir, "symbolChat", parse_symbolChat, None, "symbolChat")
     process_data(directory, alt_dir, output_dir, "battleReward", parse_battleReward, None, "battleReward")
+    process_data(directory, alt_dir, output_dir, "battleRatingRange", parse_battleRatingRange, None, "battleRatingRange")
+    process_data(directory, alt_dir, output_dir, "dailyBonus", parse_dailyBonus, None, "dailyBonus")
+    process_data(directory, alt_dir, output_dir, "dailyBonusPreset", parse_dailyBonusPreset, None, "dailyBonusPreset")
     process_data(directory, alt_dir, output_dir, "gacha", parse_gacha, copy_gacha_image, "gacha")
     process_data(directory, alt_dir, output_dir, "teamPresent", parse_teamPresent, None, "teamPresent")
     process_data(directory, alt_dir, output_dir, "teamPresentPreset", parse_teamPresentPreset, None, "teamPresentPreset")
@@ -232,7 +242,7 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
             json.dump(build_enums(db_dir, output_dir), f, indent=4, ensure_ascii=False)
     texture_dir = os.path.join(os.path.dirname(db_dir), "surfboard", "texture")
     if os.path.isdir(texture_dir):
-        export_sprites(texture_dir, os.path.join(output_dir, "sprites"))
+        export_sprites(texture_dir, os.path.join(output_dir, "sprites"), {**SPRITES, **SPRITES_2_00} if is_2_00(output_dir) else SPRITES)
         if has_song_name_rarity(output_dir):
             alias_trophy_rank_plates(os.path.join(output_dir, "sprites"))
         if is_2_00(output_dir):

@@ -28,6 +28,9 @@ SEGMENTS = [
     ("symbolChat", "Symbol Chat", "ChatIcon"),
     ("gacha", "Gacha", "StyleIcon"),
     ("battleReward", "Battle Rewards", "MilitaryTechIcon"),
+    ("battleRatingRange", "Battle Rating Ranges", "TuneIcon"),
+    ("dailyBonus", "Daily Bonuses", "TodayIcon"),
+    ("dailyBonusPreset", "Daily Bonus Sets", "CalendarMonthIcon"),
     ("teamPresent", "Team Presents", "GroupsIcon"),
     ("teamPresentPreset", "Team Present Sets", "PlaylistAddCheckIcon"),
 ]

@@ -39,7 +39,10 @@ SUBSTANCES = {
     10: ("changeSurfBoardUI", lambda el: {"value": get_int(el, "value")}),
     11: ("rightsInfo", lambda el: {"rights": get_ref_list(el, "rightsNames/list")}),
     12: ("battleReward", lambda el: {"battleReward": get_ref(el, "battleRewardName")}),
+    13: ("dailyBonusPreset", lambda el: {"dailyBonusPreset": get_ref(el, "dailyBonusPresetName")}),  # 2.05
 }
+# 2.05: type 10 holds a gacha id in avatarAccessoryGacha (changeSurfBoardUI is 0 there)
+GACHA = ("avatarAccessoryGacha", lambda el: {"gacha": get_ref(el, "avatarAccessoryGachaName")})
 
 
 def parse_event(file: str) -> dict:
@@ -67,6 +70,9 @@ def parse_event(file: str) -> dict:
         substances = safe_find(root, "substances")
         substance_type = get_int(substances, "type")
         tag, parse = SUBSTANCES[substance_type]
+        gacha = substances.find("avatarAccessoryGacha")
+        if substance_type == 10 and gacha is not None and get_ref(gacha, "avatarAccessoryGachaName"):
+            tag, parse = GACHA
         json_data["substance"] = {"type": substance_type, "kind": tag, **parse(safe_find(substances, tag))}
 
     return json_data

@@ -3,7 +3,7 @@ import os
 import xml.etree.ElementTree as ET
 
 from chuni.utils import (get_version, get_bool, get_int, get_ref, get_text_element,
-                          safe_find)
+                          line_break, safe_find)
 
 # CourseMusicDataInfo.type -> how the song slot is picked
 INFO_TYPES = {0: "selectMusic", 1: "selectLevel", 2: "selectMusicList"}  # 2: 1.45
@@ -45,6 +45,9 @@ def parse_course(file: str) -> dict:
         if root.find("reward2nd") is not None:  # 1.20.00+
             json_data["reward2nd"] = get_ref(root, "reward2nd")
         json_data["priority"] = get_int(root, "priority")
+        if root.find("conditionsCourse") is not None:  # 2.05: unlocked by clearing another course
+            json_data["conditionsCourse"] = get_ref(root, "conditionsCourse")
+            json_data["conditionsText"] = line_break(root.findtext("conditionsText"))
         json_data["infos"] = [_info(i) for i in safe_find(root, "infos").iter("CourseMusicDataInfo")]
 
     return json_data

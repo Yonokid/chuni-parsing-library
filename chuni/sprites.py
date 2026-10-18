@@ -82,12 +82,22 @@ SPRITES = {
     },
 }
 
-def export_sprites(texture_dir: str, output_dir: str) -> list[str]:
+# 2.00 re-lays out the map result atlas (alpha bounding boxes, same elements as above).
+SPRITES_2_00 = {
+    "CHU_UI_result_map_00_v11.dds": {
+        "mapTile": (1014, 208, 1138, 267),
+        "mapStart": (219, 269, 299, 293),
+        "mapGoal": (97, 62, 185, 93),
+        "mapBonus": (1017, 6, 1207, 194),  # pink MAP BONUS roundel
+    },
+}
+
+def export_sprites(texture_dir: str, output_dir: str, sprites: dict = SPRITES) -> list[str]:
     """Writes <name>.webp for every sprite into output_dir; returns the written filenames."""
     os.makedirs(output_dir, exist_ok=True)
     written = []
     absent = {}
-    for atlas, crops in SPRITES.items():
+    for atlas, crops in sprites.items():
         atlas, _, md5s = atlas.partition("#")
         path = os.path.join(texture_dir, atlas)
         if not os.path.exists(path):
