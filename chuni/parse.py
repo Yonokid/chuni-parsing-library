@@ -14,7 +14,7 @@ from chuni.tables.systemVoice import copy_systemVoice_files, parse_systemVoice
 from chuni.tables.quest import parse_quest
 from chuni.tables.name_plate import copy_namePlate_image, parse_namePlate
 from chuni.tables.reward import parse_reward
-from chuni.enums import build_enums
+from chuni.enums import build_enums, has_song_name_rarity
 from chuni.navigation import write_navigation
 from chuni.tables.event import copy_ddsBanner, copy_eventBanner, parse_event
 from chuni.tables.map import copy_ddsMap, embed_map_details, parse_map
@@ -27,7 +27,7 @@ from chuni.tables.resources import (parse_gameTable, parse_gauge, parse_iniFile,
                        parse_ranking, parse_rightsInfo)
 from chuni.tables.shop import parse_shop
 from chuni.tables.skill import parse_skill
-from chuni.sprites import export_sprites
+from chuni.sprites import alias_trophy_rank_plates, export_sprites
 from chuni.tables.stage import copy_stage_files, parse_stage
 from chuni.tables.ticket import parse_ticket
 from chuni.tables.trophy import parse_trophy
@@ -218,6 +218,8 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     texture_dir = os.path.join(os.path.dirname(db_dir), "surfboard", "texture")
     if os.path.isdir(texture_dir):
         export_sprites(texture_dir, os.path.join(output_dir, "sprites"))
+        if has_song_name_rarity(output_dir):
+            alias_trophy_rank_plates(os.path.join(output_dir, "sprites"))
     for data_type, parse_func in (
         ("iniFile", parse_iniFile), ("rightsInfo", parse_rightsInfo), ("gauge", parse_gauge),
         ("gameTable", parse_gameTable), ("ranking", parse_ranking),

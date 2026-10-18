@@ -77,3 +77,12 @@ def export_sprites(texture_dir: str, output_dir: str) -> list[str]:
             image.crop(box).save(os.path.join(output_dir, f"{name}.webp"))
             written.append(f"{name}.webp")
     return written
+
+# 1.30.00 trophy.rareType -> plate: the "(楽曲名)" variants share the Gold / Platinum plate.
+TROPHY_RANK_PLATE_1_30 = [0, 1, 2, 3, 3, 4, 4]
+
+def alias_trophy_rank_plates(sprites_dir: str) -> None:
+    """Rewrites trophyRank_<rareType>.webp so index = 1.30.00 rareType (plates are cut in 0-4 order by export_sprites)."""
+    plates = [Image.open(os.path.join(sprites_dir, f"trophyRank_{i}.webp")).copy() for i in range(5)]
+    for rare_type, plate in enumerate(TROPHY_RANK_PLATE_1_30):
+        plates[plate].save(os.path.join(sprites_dir, f"trophyRank_{rare_type}.webp"))

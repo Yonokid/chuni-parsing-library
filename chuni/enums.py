@@ -105,6 +105,14 @@ INT_ENUMS = {
 # 1.30.00 adds separate "(楽曲名)" plates: CHU_UI_Userbox_00_v11.dds legend ノーマル/ブロンズ/シルバー/ゴールド/ゴールド(楽曲名)/プラチナ/プラチナ(楽曲名).
 TROPHY_RARE_TYPE_1_30 = {0: "Normal", 1: "Bronze", 2: "Silver", 3: "Gold", 4: "Gold (song name)", 5: "Platinum", 6: "Platinum (song name)"}
 
+def has_song_name_rarity(output_dir: str | None) -> bool:
+    """True for versions whose trophy.rareType uses TROPHY_RARE_TYPE_1_30 (ids were reordered in 1.30.00)."""
+    path = os.path.join(output_dir or "", "trophy", "trophy.json")
+    if not os.path.exists(path):
+        return False
+    with open(path, "r", encoding="utf-8") as f:
+        return any(t["rareType"] > 4 for t in json.load(f))
+
 def build_enums(db_dir: str, output_dir: str | None = None) -> dict:
     tables = {
         field: read_table(os.path.join(db_dir, f"{table}TableRecord.bin"))
@@ -112,11 +120,8 @@ def build_enums(db_dir: str, output_dir: str | None = None) -> dict:
         if os.path.exists(os.path.join(db_dir, f"{table}TableRecord.bin"))
     }
     ints = INT_ENUMS
-    trophy_path = os.path.join(output_dir or "", "trophy", "trophy.json")
-    if os.path.exists(trophy_path):
-        with open(trophy_path, "r", encoding="utf-8") as f:
-            if any(t["rareType"] > 4 for t in json.load(f)):  # rarity ids were reordered in 1.30.00
-                ints = {**INT_ENUMS, "trophy.rareType": TROPHY_RARE_TYPE_1_30}
+    if has_song_name_rarity(output_dir):
+        ints = {**INT_ENUMS, "trophy.rareType": TROPHY_RARE_TYPE_1_30}
     return {"tables": tables, "ints": ints}
 
 if __name__ == "__main__":
