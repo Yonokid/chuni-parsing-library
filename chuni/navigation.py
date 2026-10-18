@@ -22,6 +22,14 @@ SEGMENTS = [
     ("duel", "Duels", "SportsMmaIcon"),
     ("systemVoice", "System Voices", "RecordVoiceOverIcon"),
     ("mapIcon", "Map Icons", "PinDropIcon"),
+    ("avatarAccessory", "Avatar Items", "FaceIcon"),
+    ("avatarAccessoryGacha", "Avatar Gacha", "CasinoIcon"),
+    ("frame", "Frames", "FilterFramesIcon"),
+    ("symbolChat", "Symbol Chat", "ChatIcon"),
+    ("gacha", "Gacha", "StyleIcon"),
+    ("battleReward", "Battle Rewards", "MilitaryTechIcon"),
+    ("teamPresent", "Team Presents", "GroupsIcon"),
+    ("teamPresentPreset", "Team Present Sets", "PlaylistAddCheckIcon"),
 ]
 
 def write_navigation(output_dir: str) -> None:

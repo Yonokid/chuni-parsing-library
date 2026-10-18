@@ -350,9 +350,9 @@ def uv_motion(uvc: bytes) -> dict | None:
     curves = {}
     for axis in range(2):
         kind, first, n = ints[axis * 3:axis * 3 + 3]
-        if n <= 0:
+        if n <= 0 or kind not in (0, 1, 2):  # kind 3 (1.20.00+: pool 5, one int16 per frame, scale unknown) is skipped
             continue
-        pool = pools.get({0: 2, 1: 3, 2: 4}[kind], b"")  # kind 3 (1.20.00+: pool 5, one int16 per frame, scale unknown) is skipped by the caller
+        pool = pools.get({0: 2, 1: 3, 2: 4}[kind], b"")
         if kind == 2:
             curves[axis] = [(i, v, 0.0) for i, v in enumerate(struct.unpack_from(f"<{n}f", pool, 4 + 4 * first))]
         elif kind == 0:

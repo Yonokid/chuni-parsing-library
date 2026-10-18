@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from chuni.utils import get_bool, get_int, get_ref, get_ref_list, get_text_element, safe_find
+from chuni.utils import get_bool, get_int, get_ref, get_ref_list, get_text_element, get_version, safe_find
 
 
 def parse_quest(file: str) -> dict:
@@ -10,7 +10,7 @@ def parse_quest(file: str) -> dict:
         root = ET.parse(xml_file).getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["disableFlag"] = get_bool(root, "disableFlag")
         json_data["charaWorks"] = get_ref_list(root, "charaWorks/list")

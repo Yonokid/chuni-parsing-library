@@ -4,9 +4,13 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from chuni.utils import (get_enum_name, get_int, get_ref, get_ref_list,
+from chuni.utils import (get_bool, get_version, get_enum_name, get_int, get_ref, get_ref_list,
                           get_text_element, safe_find)
 
+
+def is_worlds_end(chart: dict) -> bool:
+    """WORLD'S END is difficulty 4 until 1.50, 5 from 2.00 (ULTIMA takes 4): go by the label."""
+    return chart["difficultyName"].startswith("WORLD")
 
 def parse_music(file: str) -> dict:
     with open(file, "r", encoding="utf-8") as xml_file:
@@ -16,7 +20,7 @@ def parse_music(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["sortName"] = get_text_element(root, "sortName")
         json_data["artistName"] = get_text_element(root, "artistName/str")
@@ -30,8 +34,10 @@ def parse_music(file: str) -> dict:
         json_data["priority"] = get_int(root, "priority")
         json_data["cueFile"] = get_ref(root, "cueFileName")
         json_data["stage"] = get_ref(root, "stageName")
-        json_data["previewStartTime"] = int(get_text_element(root, "previewStartTime"))
-        json_data["previewEndTime"] = int(get_text_element(root, "previewEndTime"))
+        json_data["previewStartTime"] = int(root.findtext("previewStartTime", "0"))  # dropped in 2.00
+        json_data["previewEndTime"] = int(root.findtext("previewEndTime", "0"))
+        if root.find("enableUltima") is not None:
+            json_data["enableUltima"] = get_bool(root, "enableUltima")
         json_data["firstLock"] = get_text_element(root, "firstLock") == "true"
         json_data["charts"] = []
         fumens = safe_find(root, "fumens")
@@ -47,7 +53,7 @@ def parse_music(file: str) -> dict:
             fumen_element["file"] = get_text_element(fumen, "file/path")
             fumen_element["notesDesigner"] = get_text_element(fumen, "notesDesigner")
             fumen_element["defaultBpm"] = get_int(fumen, "defaultBpm")
-            if fumen_element["difficulty"] == 4:  # WORLD'S END: no level, a star rating and a kanji tag instead
+            if is_worlds_end(fumen_element):  # WORLD'S END: no level, a star rating and a kanji tag instead
                 fumen_element["stars"] = get_int(root, "starDifType")
                 fumen_element["worldsEndTag"] = get_text_element(root, "worldsEndTagName/str")
             json_data["charts"].append(fumen_element)

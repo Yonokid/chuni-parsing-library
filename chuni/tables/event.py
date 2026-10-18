@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from chuni.utils import (get_bool, get_int, get_ref, get_ref_list,
+from chuni.utils import (get_version, get_bool, get_int, get_ref, get_ref_list,
                           get_text_element, line_break, safe_find)
 
 # EventData.substances.type -> active sub-struct (deserializer field order; matches shipped data).
@@ -37,6 +37,8 @@ SUBSTANCES = {
     8: ("quest", lambda el: {"quests": get_ref_list(el, "questNames/list")}),
     9: ("duel", lambda el: {"duel": get_ref(el, "duelName")}),
     10: ("changeSurfBoardUI", lambda el: {"value": get_int(el, "value")}),
+    11: ("rightsInfo", lambda el: {"rights": get_ref_list(el, "rightsNames/list")}),
+    12: ("battleReward", lambda el: {"battleReward": get_ref(el, "battleRewardName")}),
 }
 
 
@@ -48,7 +50,7 @@ def parse_event(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["ddsBannerId"] = get_text_element(root, "ddsBannerName/id")
         json_data["eventBannerName"] = get_text_element(root, "substances/information/image/path")
@@ -56,6 +58,9 @@ def parse_event(file: str) -> dict:
         json_data["periodDispType"] = get_int(root, "periodDispType")
         json_data["alwaysOpen"] = get_bool(root, "alwaysOpen")
         json_data["priority"] = get_int(root, "priority")
+        for flag in ("teamOnly", "isKop"):  # 2.00+
+            if root.find(flag) is not None:
+                json_data[flag] = get_bool(root, flag)
         if root.find("isAou") is not None:
             json_data["isAou"] = get_bool(root, "isAou")
 

@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from chuni.utils import get_bool, get_int, get_ref, get_text_element, safe_find
+from chuni.utils import get_bool, get_int, get_ref, get_text_element, get_version, safe_find
 
 
 def parse_map(file: str) -> dict:
@@ -15,7 +15,7 @@ def parse_map(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["ddsMapId"] = get_text_element(root, "infos/MapDataAreaInfo/ddsMapName/id")
         json_data["mapType"] = get_int(root, "mapType")
@@ -25,6 +25,10 @@ def parse_map(file: str) -> dict:
             json_data["netDispPeriod"] = get_bool(root, "netDispPeriod")
         json_data["stopMapArea"] = get_ref(root, "stopMapAreaName")
         json_data["stopUnlockEvent"] = get_ref(root, "stopUnlockEventName")
+        if root.find("categoryName") is not None:  # 2.00+: pages of areas, stop gates on a page / release event instead
+            json_data["category"] = get_ref(root, "categoryName")
+            json_data["stopPageIndex"] = get_int(root, "stopPageIndex")
+            json_data["stopReleaseEvent"] = get_ref(root, "stopReleaseEventName")
 
         areas = []
         for info in safe_find(root, "infos").iter("MapDataAreaInfo"):
@@ -33,9 +37,14 @@ def parse_map(file: str) -> dict:
                 key: get_ref(info, f"{key}Name") if info.find(f"{key}Name") is not None else None
                 for key in ("mapArea", "ddsMap", "music", "reward", "chara", "skill", "trophy", "normalGauge", "challengeGauge")
             }
-            area["challengeRating"] = {
-                dif: get_int(info, f"challengeRating/{dif}") for dif in ("advanced", "expert", "master")
-            }
+            if info.find("challengeRating") is not None:  # dropped in 2.00
+                area["challengeRating"] = {
+                    dif: get_int(info, f"challengeRating/{dif}") for dif in ("advanced", "expert", "master")
+                }
+            if info.find("gaugeName") is not None:  # 2.00+: one gauge replaces normal/challenge
+                area["gauge"] = get_ref(info, "gaugeName")
+                for key in ("pageIndex", "indexInPage", "requiredAchievementCount"):
+                    area[key] = get_int(info, key)
             areas.append(area)
         json_data["areas"] = areas
 
@@ -76,8 +85,9 @@ def embed_map_details(output_dir: str) -> None:
 
     def icon_path(reward):
         """Image path (relative to the version folder) for a non-chara reward, if it has one."""
-        if reward["skill"] and reward["skill"]["id"] in skills:
-            return f"sprites/skillCategory_{skills[reward['skill']['id']]['category']}.webp"
+        skill = reward["skill"] or reward.get("skillSeed")  # 2.00: skills are granted as seeds
+        if skill and skill["id"] in skills:
+            return f"sprites/skillCategory_{skills[skill['id']]['category']}.webp"
         if reward["namePlate"] and reward["namePlate"]["id"] in plates:
             return f"namePlate/{plates[reward['namePlate']['id']]['image']}"
         if reward["ticket"] and reward["ticket"]["id"] in tickets:
@@ -95,8 +105,8 @@ def embed_map_details(output_dir: str) -> None:
             area = areas.get((info["mapArea"] or {}).get("id"))
             if area is None:
                 continue
-            for key in ("normalGauge", "challengeGauge"):  # per-difficulty norma/max, see gauge.md
-                gauge = gauges.get((info[key] or {}).get("id"))
+            for key in ("normalGauge", "challengeGauge", "gauge"):  # per-difficulty norma/max, see gauge.md
+                gauge = gauges.get((info.get(key) or {}).get("id"))
                 if gauge:
                     info[key] = {**info[key], "fumens": gauge["fumens"]}
             info["reward"] = full_reward(info["reward"])

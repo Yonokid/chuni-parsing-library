@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from chuni.utils import get_ref, get_text_element, safe_find
+from chuni.utils import get_ref, get_text_element, get_version, safe_find
 
 # substance <type> picks which child block applies; order matches the type ids 0..8 (checked against the data)
 KINDS = ("chara", "charaWorks", "skill", "skillCategory", "music", "musicGenre", "musicWorks", "musicDif", "musicLv")
@@ -14,7 +14,7 @@ def parse_mapBonus(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["substances"] = []
         for sub in safe_find(root, "substances/list").iter("MapBonusSubstanceData"):

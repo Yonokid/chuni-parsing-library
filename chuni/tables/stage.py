@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from PIL import Image
 
 from chuni.stage3d.afb import AcroReader, AFRC_Reader, extract_svo_textures
-from chuni.utils import get_text_element
+from chuni.utils import get_text_element, get_version
 from chuni.stage3d.export import export_stage
 
 
@@ -18,7 +18,7 @@ def parse_stage(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["releaseTagName"] = get_text_element(root, "releaseTagName/str")
         json_data["notesFieldLine"] = get_text_element(root, "notesFieldLine/str")

@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from chuni.utils import get_text_element
+from chuni.utils import get_text_element, get_version
 
 
 def parse_ticket(file: str) -> dict:
@@ -11,7 +11,7 @@ def parse_ticket(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["type"] = int(get_text_element(root, "type"))
         json_data["stockMaxNum"] = int(get_text_element(root, "stockMaxNum"))

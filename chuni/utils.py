@@ -16,6 +16,10 @@ def get_text_element(element: ET.Element, tag: str):
     text_element = safe_find(element, tag).text
     return line_break(text_element)
 
+def get_version(root: ET.Element) -> int:
+    """<resourceVersion><str>, always 10000 where present; dropped in 2.00 (NEW!!)."""
+    return int(root.findtext("resourceVersion/str", "10000"))
+
 def get_ref(element: ET.Element, tag: str):
     """Resolves a <tag><id>/<str> cross-reference to another asset. None if unset (id -1) or absent."""
     if element.find(tag) is None:  # e.g. mapIcon/systemVoice `works` dropped in 1.40
@@ -135,6 +139,15 @@ def parse_condition(cond: ET.Element) -> dict:
         data["charaTargetRank"] = target_rank
     if get_text_element(cond, "skillData/lvMax") == "true":
         data["anySkillLvMax"] = True
+
+    if cond.find("personData/battleRank") is not None:  # 2.00+ net battle
+        battle_rank = get_enum_name(cond, "personData/battleRank")
+        if battle_rank:
+            data["battleRank"] = battle_rank
+        for field, tag in (("totalNetBattle", "personData/totalNetBattle"), ("lapNum", "travelData/lapNum")):
+            value = int_or_none(cond, tag)
+            if value:
+                data[field] = value
 
     have_trophies = get_ref_list(cond, "trophyData/haveTrophyNames/list")
     if have_trophies:

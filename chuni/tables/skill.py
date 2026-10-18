@@ -1,12 +1,19 @@
 import os
 import xml.etree.ElementTree as ET
 
-from chuni.utils import (get_bool, get_enum_name, get_int, get_ref,
+from chuni.utils import (get_version, get_bool, get_enum_name, get_int, get_ref,
                           get_ref_list, get_text_element, safe_find)
 
 
 def _ref_names(element: ET.Element, tag: str) -> list:
     return [ref["name"] for ref in get_ref_list(element, f"{tag}/list")]
+
+def _growth(el: ET.Element, tag: str):
+    """Int before 2.00; 2.00 (NEW!!) makes it a <SkillGrowthData><value> list per grown level (empty when unused)."""
+    node = safe_find(el, tag)
+    if len(node) or not (node.text or "").strip():
+        return [get_int(item, "value") for item in node.iter("SkillGrowthData")]
+    return int(node.text)
 
 def _section(el: ET.Element) -> dict:
     return {
@@ -47,9 +54,9 @@ def _gauge_assist(el: ET.Element) -> dict:
         "useNumNoAccess": get_bool(el, "useNumNoAccess"),
         "notesGaugeNoAdd": get_bool(el, "notesGaugeNoAdd"),
         "valueAddGauge": get_int(el, "valueAddGauge"),
-        "valueGrowthAddGauge": get_int(el, "valueGrowthAddGauge"),
+        "valueGrowthAddGauge": _growth(el, "valueGrowthAddGauge"),
         "rateAddGauge": get_int(el, "rateAddGauge"),
-        "rateGrowthAddGauge": get_int(el, "rateGrowthAddGauge"),
+        "rateGrowthAddGauge": _growth(el, "rateGrowthAddGauge"),
     }
 
 def _gauge_keep(el: ET.Element) -> dict:
@@ -61,7 +68,7 @@ def _damage_guard(el: ET.Element) -> dict:
         "notesGroupJudge": get_bool(el, "notesGroupJudge"),
         "useNumNoAccess": get_bool(el, "useNumNoAccess"),
         "damageRate": get_int(el, "damageRate"),
-        "growthDamageRate": get_int(el, "growthDamageRate"),
+        "growthDamageRate": _growth(el, "growthDamageRate"),
         "section": _section(safe_find(el, "section")),
     }
 
@@ -98,22 +105,27 @@ def parse_skill(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["category"] = int(get_text_element(root, "category/id" if root.find("category/id") is not None else "category"))
-        json_data["rareType"] = int(get_text_element(root, "rareType"))
+        json_data["rareType"] = int(root.findtext("rareType", "0"))  # 2.00: skills are seeds, no rarity/price/force level
         json_data["counterType"] = int(get_text_element(root, "counterType"))
         json_data["maxLv"] = int(get_text_element(root, "maxLv"))
-        json_data["forceLv"] = get_int(root, "forceLv")
+        json_data["forceLv"] = int(root.findtext("forceLv", "0"))
         json_data["useLimit"] = get_text_element(root, "useLimit") == "true"
         json_data["useNum"] = int(get_text_element(root, "useNum"))
-        json_data["growthUseNum"] = get_int(root, "growthUseNum")
-        json_data["price"] = int(get_text_element(root, "price"))
+        json_data["growthUseNum"] = _growth(root, "growthUseNum")
+        json_data["price"] = int(root.findtext("price", "0"))
         json_data["defaultHave"] = get_bool(root, "defaultHave")
         json_data["chgInvalidColor"] = root.findtext("chgInvalidColor", "false") == "true"
         json_data["priority"] = get_int(root, "priority")
 
-        json_data["targetCharas"] = get_ref_list(root, "targetCharaNames/list")
+        if root.find("seedName") is not None:  # 2.00+: the seed item that levels the skill
+            json_data["seedName"] = get_text_element(root, "seedName")
+            json_data["growthExLv"] = _growth(root, "growthExLv")
+        if root.find("releaseTagName") is not None:
+            json_data["releaseTagName"] = get_text_element(root, "releaseTagName/str")
+        json_data["targetCharas"] = get_ref_list(root, "targetCharaNames/list") if root.find("targetCharaNames") is not None else []
         json_data["substances"] = [
             parse_substance(sub) for sub in safe_find(root, "substances").iter("SkillSubstanceData")
         ]

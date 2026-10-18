@@ -1,10 +1,10 @@
 import xml.etree.ElementTree as ET
 
-from chuni.utils import (get_bool, get_int, get_ref, get_ref_list,
+from chuni.utils import (get_version, get_bool, get_int, get_ref, get_ref_list,
                           get_text_element, safe_find)
 
 # MissionSubData.type -> active sub-struct (deserializer field order; 0/2/3 confirmed by the shipped data).
-MISSION_TYPES = {0: "playMusic", 1: "playSetting", 2: "playMusicResult", 3: "playCourse", 4: "chara", 5: "skill"}
+MISSION_TYPES = {0: "playMusic", 1: "playSetting", 2: "playMusicResult", 3: "playCourse", 4: "chara", 5: "skill", 6: "playNetBattle"}
 
 # per sub-struct: (output key, tag, reader); only populated fields are kept
 _FIELDS = {
@@ -32,6 +32,7 @@ _FIELDS = {
     ],
     "chara": [("chara", "chara", get_ref), ("charaWorks", "charaWorks", get_ref)],
     "skill": [("category", "category", get_ref)],
+    "playNetBattle": [("isNetBattlePlay", "isNetBattlePlay", get_bool)],
 }
 
 
@@ -49,7 +50,7 @@ def parse_duelMission(file: str) -> dict:
 
     return {
         "id": int(get_text_element(root, "name/id")),
-        "version": int(get_text_element(root, "resourceVersion/str")),
+        "version": get_version(root),
         "name": get_text_element(root, "name/str"),
         "disableFlag": get_bool(root, "disableFlag"),
         "explainText": get_text_element(root, "explainText"),

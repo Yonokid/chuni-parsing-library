@@ -2,6 +2,14 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 
+from chuni.tables.avatarAccessory import copy_avatarAccessory_image, parse_avatarAccessory
+from chuni.tables.avatarAccessoryGacha import parse_avatarAccessoryGacha
+from chuni.tables.battleReward import parse_battleReward
+from chuni.tables.frame import copy_frame_image, parse_frame
+from chuni.tables.gacha import copy_gacha_image, parse_gacha
+from chuni.tables.symbolChat import parse_symbolChat
+from chuni.tables.teamPresent import parse_teamPresent
+from chuni.tables.teamPresentPreset import parse_teamPresentPreset
 from chuni.tables.chara import copy_chara_image, parse_chara
 from chuni.tables.aimeCollab import copy_aimeCollab_image, parse_aimeCollab
 from chuni.tables.chargeItem import parse_chargeItem
@@ -14,20 +22,20 @@ from chuni.tables.systemVoice import copy_systemVoice_files, parse_systemVoice
 from chuni.tables.quest import parse_quest
 from chuni.tables.name_plate import copy_namePlate_image, parse_namePlate
 from chuni.tables.reward import parse_reward
-from chuni.enums import build_enums, has_song_name_rarity
+from chuni.enums import build_enums, has_song_name_rarity, is_2_00
 from chuni.navigation import write_navigation
 from chuni.tables.event import copy_ddsBanner, copy_eventBanner, parse_event
 from chuni.tables.map import copy_ddsMap, embed_map_details, parse_map
 from chuni.tables.mapBonus import parse_mapBonus
 from chuni.tables.map_area import parse_mapArea
 from chuni.tables.movie import copy_movie, parse_movie
-from chuni.tables.music import copy_cueFile, copy_jacket, parse_music
+from chuni.tables.music import copy_cueFile, copy_jacket, is_worlds_end, parse_music
 from chuni.tables.present import parse_present
 from chuni.tables.resources import (parse_gameTable, parse_gauge, parse_iniFile,
                        parse_ranking, parse_rightsInfo)
 from chuni.tables.shop import parse_shop
 from chuni.tables.skill import parse_skill
-from chuni.sprites import alias_trophy_rank_plates, export_sprites
+from chuni.sprites import alias_ticket_banners_2_00, alias_trophy_rank_plates, export_sprites
 from chuni.tables.stage import copy_stage_files, parse_stage
 from chuni.tables.ticket import parse_ticket
 from chuni.tables.trophy import parse_trophy
@@ -47,7 +55,7 @@ def combine_unique_keys(list1, list2, unique_key):
 def worlds_end_base(song: dict) -> int | None:
     """WORLD'S END charts are separate 8xxx songs reusing their base song's audio: that song's id."""
     cue = song["cueFile"]
-    if cue and cue["id"] != song["id"] and any(c["difficulty"] == 4 for c in song["charts"]):
+    if cue and cue["id"] != song["id"] and any(is_worlds_end(c) for c in song["charts"]):
         return cue["id"]
     return None
 
@@ -130,7 +138,7 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                 elif alt_dir is not None:
                     path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{id.zfill(6)}")
                     copy_func(path, parsed_data, data_output_dir)
-            elif data_type in ("namePlate", "aimeCollab", "mapIcon", "systemVoice"):
+            elif data_type in ("namePlate", "aimeCollab", "mapIcon", "systemVoice", "avatarAccessory", "frame", "gacha"):
                 path = os.path.join(directory, data_type, item.name)
                 copy_func(path, parsed_data, data_output_dir)
             elif data_type == "movie":
@@ -209,6 +217,14 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "systemVoice", parse_systemVoice, copy_systemVoice_files, "systemVoice")
     process_data(directory, alt_dir, output_dir, "quest", parse_quest, None, "quest")
     process_data(directory, alt_dir, output_dir, "namePlate", parse_namePlate, copy_namePlate_image, "namePlate")
+    process_data(directory, alt_dir, output_dir, "avatarAccessory", parse_avatarAccessory, copy_avatarAccessory_image, "avatarAccessory")
+    process_data(directory, alt_dir, output_dir, "avatarAccessoryGacha", parse_avatarAccessoryGacha, None, "avatarAccessoryGacha")
+    process_data(directory, alt_dir, output_dir, "frame", parse_frame, copy_frame_image, "frame")
+    process_data(directory, alt_dir, output_dir, "symbolChat", parse_symbolChat, None, "symbolChat")
+    process_data(directory, alt_dir, output_dir, "battleReward", parse_battleReward, None, "battleReward")
+    process_data(directory, alt_dir, output_dir, "gacha", parse_gacha, copy_gacha_image, "gacha")
+    process_data(directory, alt_dir, output_dir, "teamPresent", parse_teamPresent, None, "teamPresent")
+    process_data(directory, alt_dir, output_dir, "teamPresentPreset", parse_teamPresentPreset, None, "teamPresentPreset")
     db_dir = os.path.join(os.path.dirname(os.path.normpath(alt_dir or directory)), "db")
     if os.path.isdir(db_dir):
         ensure_directory(output_dir)
@@ -219,6 +235,8 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
         export_sprites(texture_dir, os.path.join(output_dir, "sprites"))
         if has_song_name_rarity(output_dir):
             alias_trophy_rank_plates(os.path.join(output_dir, "sprites"))
+        if is_2_00(output_dir):
+            alias_ticket_banners_2_00(os.path.join(output_dir, "sprites"))
     for data_type, parse_func in (
         ("iniFile", parse_iniFile), ("rightsInfo", parse_rightsInfo), ("gauge", parse_gauge),
         ("gameTable", parse_gameTable), ("ranking", parse_ranking),

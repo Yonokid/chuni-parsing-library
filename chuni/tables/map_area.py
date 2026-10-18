@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from chuni.utils import get_text_element, get_ref, safe_find
+from chuni.utils import get_ref, get_text_element, get_version, safe_find
 
 
 def parse_mapArea(file: str) -> dict:
@@ -11,7 +11,7 @@ def parse_mapArea(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         if root.find("mapBonusName") is not None:  # older versions have no area bonus
             json_data["mapBonus"] = get_ref(root, "mapBonusName")

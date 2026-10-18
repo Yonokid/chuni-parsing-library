@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from chuni.utils import get_int, get_ref, get_text_element, safe_find
+from chuni.utils import get_int, get_ref, get_text_element, get_version, safe_find
 
 
 def parse_aimeCollab(file: str) -> dict:
@@ -14,7 +14,7 @@ def parse_aimeCollab(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["campaignId"] = get_int(root, "campaignID")
         json_data["imageFile"] = get_text_element(root, "image/path")

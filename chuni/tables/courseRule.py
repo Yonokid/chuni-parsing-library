@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from chuni.utils import get_int, get_text_element, line_break
+from chuni.utils import get_int, get_text_element, get_version, line_break
 
 
 def parse_courseRule(file: str) -> dict:
@@ -9,7 +9,7 @@ def parse_courseRule(file: str) -> dict:
 
     return {
         "id": int(get_text_element(root, "name/id")),
-        "version": int(get_text_element(root, "resourceVersion/str")),
+        "version": get_version(root),
         "name": get_text_element(root, "name/str"),
         "explain": line_break(root.findtext("explain")),
         "life": get_int(root, "life"),

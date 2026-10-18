@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from chuni.utils import (get_int, get_text_element, parse_conditions,
+from chuni.utils import (get_version, get_int, get_text_element, parse_conditions,
                           parse_open_condition, safe_find)
 
 
@@ -12,7 +12,7 @@ def parse_trophy(file: str) -> dict:
         root = tree.getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["explainText"] = get_text_element(root, "explainText")
         json_data["rareType"] = int(get_text_element(root, "rareType"))

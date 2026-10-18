@@ -2,7 +2,7 @@ import json
 import os
 import xml.etree.ElementTree as ET
 
-from chuni.utils import (get_bool, get_int, get_ref, get_text_element,
+from chuni.utils import (get_version, get_bool, get_int, get_ref, get_text_element,
                           safe_find)
 
 # CourseMusicDataInfo.type -> how the song slot is picked
@@ -34,7 +34,7 @@ def parse_course(file: str) -> dict:
         root = ET.parse(xml_file).getroot()
 
         json_data["id"] = int(get_text_element(root, "name/id"))
-        json_data["version"] = int(get_text_element(root, "resourceVersion/str"))
+        json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["disableFlag"] = get_bool(root, "disableFlag")
         json_data["difficulty"] = {"id": get_int(root, "difficulty/id"), "name": get_text_element(root, "difficulty/data")}

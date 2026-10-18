@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-from chuni.utils import get_bool, get_int, get_ref, get_text_element
+from chuni.utils import get_bool, get_int, get_ref, get_text_element, get_version
 
 
 def parse_systemVoice(file: str) -> dict:
@@ -13,7 +13,7 @@ def parse_systemVoice(file: str) -> dict:
 
     return {
         "id": int(get_text_element(root, "name/id")),
-        "version": int(get_text_element(root, "resourceVersion/str")),
+        "version": get_version(root),
         "name": get_text_element(root, "name/str"),
         "disableFlag": get_bool(root, "disableFlag"),
         "works": get_ref(root, "works"),

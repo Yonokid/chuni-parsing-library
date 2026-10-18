@@ -63,7 +63,7 @@ INT_ENUMS = {
     "skill.substance.type": {0: "gaugeAssist", 1: "gaugeKeep", 2: "damageGuard", 3: "deathPenalty",
                              4: "changeJudgeIni", 5: "changeJudgeResult", 6: "changeSpeed", 7: "changeImg"},
     # EventData.substances.type: see event.SUBSTANCES.
-    "event.substance.type": {0: "flag", 1: "information", 2: "map", 3: "music", 4: "advertiseMovie", 5: "recommendMusic", 6: "release", 7: "course", 8: "quest", 9: "duel", 10: "changeSurfBoardUI"},
+    "event.substance.type": {0: "flag", 1: "information", 2: "map", 3: "music", 4: "advertiseMovie", 5: "recommendMusic", 6: "release", 7: "course", 8: "quest", 9: "duel", 10: "changeSurfBoardUI", 11: "rightsInfo", 12: "battleReward"},
     # Skill explain texts: award 1/2/3 skills say FULL COMBO / FULL CHAIN / ALL JUSTICE (not the ScoreAward table order).
     "skill.timing.award": {0: "None", 1: "FULL COMBO", 2: "FULL CHAIN", 3: "ALL JUSTICE"},
     # Skill explain texts: scene 1 "ゲーム開始時", 2 "ゲーム終了時"; the only scene-3 skill (乙女街道) does both.
@@ -104,7 +104,30 @@ INT_ENUMS = {
 }
 
 # 1.30.00 adds separate "(楽曲名)" plates: CHU_UI_Userbox_00_v11.dds legend ノーマル/ブロンズ/シルバー/ゴールド/ゴールド(楽曲名)/プラチナ/プラチナ(楽曲名).
-TROPHY_RARE_TYPE_1_30 = {0: "Normal", 1: "Bronze", 2: "Silver", 3: "Gold", 4: "Gold (song name)", 5: "Platinum", 6: "Platinum (song name)"}
+TROPHY_RARE_TYPE_1_30 = {0: "Normal", 1: "Bronze", 2: "Silver", 3: "Gold", 4: "Gold (song name)", 5: "Platinum", 6: "Platinum (song name)", 7: "Rainbow"}  # 7: 2.00 (CHU_UI_title_rank_00_v10 sixth plate)
+
+# 2.00.00 (NEW!!) renumbers several enums: skills become seeds, MASTER/ULTIMA/WORLD'S END are separate tickets.
+INT_ENUMS_2_00 = {
+    "ticket.type": {0: "Character rank boost", 1: "MASTER play", 2: "ULTIMA play", 3: "WORLD'S END play",
+                    4: "Map progress boost", 5: "Character rank limit unlock"},  # 5: statues, no banner
+    "reward.type": {**INT_ENUMS["reward.type"], 4: "Skill seed"},
+    "chara.rank.type": {1: "Skill seed", 2: "Flavor text"},
+    # Gem icons of CHU_UI_SkillData_00.dds, named by the skills that use each category.
+    "skill.category": {0: "None", 1: "Guard", 2: "Support", 3: "Boost", 4: "Combo", 5: "A-Break", 6: "Judge", 7: "Judge+",
+                       8: "Absolute", 9: "Absolute+", 10: "Catastrophy", 11: "Unlimited", 12: "Unlimited+"},
+    # AvatarAccessory.category: DMY_Avatar* textures are Wear/Head/Face/Skin/Item/Front/Back; 4 vs 6 and 7 are unconfirmed
+    # (1/2/3/5 match the item names, 6 is the only layerIndex 1).
+    "avatarAccessory.category": {1: "Wear", 2: "Head", 3: "Face", 4: "Skin", 5: "Item", 6: "Front", 7: "Back"},
+    "teamPresent.category": {1: "Individual", 2: "Team"},
+}
+
+def is_2_00(output_dir: str | None) -> bool:
+    """True for output whose skills are seeds (2.00.00+): ticket/reward/skill enums were renumbered."""
+    path = os.path.join(output_dir or "", "skill", "skill.json")
+    if not os.path.exists(path):
+        return False
+    with open(path, "r", encoding="utf-8") as f:
+        return any("seedName" in s for s in json.load(f))
 
 def has_song_name_rarity(output_dir: str | None) -> bool:
     """True for versions whose trophy.rareType uses TROPHY_RARE_TYPE_1_30 (ids were reordered in 1.30.00)."""
@@ -123,6 +146,8 @@ def build_enums(db_dir: str, output_dir: str | None = None) -> dict:
     ints = INT_ENUMS
     if has_song_name_rarity(output_dir):
         ints = {**INT_ENUMS, "trophy.rareType": TROPHY_RARE_TYPE_1_30}
+    if is_2_00(output_dir):
+        ints = {**ints, **INT_ENUMS_2_00}
     return {"tables": tables, "ints": ints}
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import configparser
 import os
 import xml.etree.ElementTree as ET
 
-from chuni.utils import get_int, get_ref, get_text_element, safe_find
+from chuni.utils import get_int, get_ref, get_text_element, get_version, safe_find
 
 
 def _header(file: str) -> tuple[ET.Element, dict]:
@@ -11,7 +11,7 @@ def _header(file: str) -> tuple[ET.Element, dict]:
         root = ET.parse(xml_file).getroot()
     return root, {
         "id": int(get_text_element(root, "name/id")),
-        "version": int(get_text_element(root, "resourceVersion/str")),
+        "version": get_version(root),
         "name": get_text_element(root, "name/str"),
     }
 
@@ -31,7 +31,9 @@ def parse_iniFile(file: str) -> dict:
 
 def parse_rightsInfo(file: str) -> dict:
     root, data = _header(file)
-    data["type"] = get_int(root, "type")
+    data["type"] = int(root.findtext("type", "0"))  # dropped in 2.00
+    if root.find("priority") is not None:
+        data["priority"] = get_int(root, "priority")
     data["image"] = get_text_element(root, "image/path")
     return data
 
