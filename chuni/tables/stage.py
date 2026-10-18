@@ -69,8 +69,9 @@ def copy_stage_files(input: str, stage: dict, output: str) -> None:
         src = os.path.join(input, filename)
         if not os.path.isfile(src):
             continue
-        shutil.copy(src, os.path.join(output, filename))
-        if filename.lower().endswith(".afb"):
+        if not filename.lower().endswith(".afb"):  # .afb sources aren't published, only the .glb
+            shutil.copy(src, os.path.join(output, filename))
+        else:
             textures.extend(_extract_afb_textures(src, output))
             glb = os.path.splitext(filename)[0] + ".glb"
             try:
