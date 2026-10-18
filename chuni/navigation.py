@@ -19,6 +19,9 @@ SEGMENTS = [
     ("namePlate", "Name Plates", "BadgeIcon"),
     ("quest", "Quests", "ExploreIcon"),
     ("chargeItem", "Charge Items", "PaymentsIcon"),
+    ("duel", "Duels", "SportsMmaIcon"),
+    ("systemVoice", "System Voices", "RecordVoiceOverIcon"),
+    ("mapIcon", "Map Icons", "PinDropIcon"),
 ]
 
 def write_navigation(output_dir: str) -> None:

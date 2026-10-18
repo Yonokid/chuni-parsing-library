@@ -6,6 +6,7 @@ Two sources:
   * Plain-int enums have no names in the data or the exe, so INT_ENUMS below is recovered from the data:
     each entry notes its evidence. Values not listed are unused in SDBT 1.00.02.
 """
+import json
 import os
 import struct
 
@@ -62,7 +63,7 @@ INT_ENUMS = {
     "skill.substance.type": {0: "gaugeAssist", 1: "gaugeKeep", 2: "damageGuard", 3: "deathPenalty",
                              4: "changeJudgeIni", 5: "changeJudgeResult", 6: "changeSpeed", 7: "changeImg"},
     # EventData.substances.type: see event.SUBSTANCES.
-    "event.substance.type": {0: "flag", 1: "information", 2: "map", 3: "music", 4: "advertiseMovie", 5: "recommendMusic", 6: "release", 7: "course", 8: "quest"},
+    "event.substance.type": {0: "flag", 1: "information", 2: "map", 3: "music", 4: "advertiseMovie", 5: "recommendMusic", 6: "release", 7: "course", 8: "quest", 9: "duel"},
     # Skill explain texts: award 1/2/3 skills say FULL COMBO / FULL CHAIN / ALL JUSTICE (not the ScoreAward table order).
     "skill.timing.award": {0: "None", 1: "FULL COMBO", 2: "FULL CHAIN", 3: "ALL JUSTICE"},
     # Skill explain texts: scene 1 "ゲーム開始時", 2 "ゲーム終了時"; the only scene-3 skill (乙女街道) does both.
@@ -101,13 +102,22 @@ INT_ENUMS = {
                        6: "Boost 2", 7: "Boost 3", 8: "Boost 4", 9: "Danger 2", 10: "Danger 3"},
 }
 
-def build_enums(db_dir: str) -> dict:
+# 1.30.00 adds separate "(楽曲名)" plates: CHU_UI_Userbox_00_v11.dds legend ノーマル/ブロンズ/シルバー/ゴールド/ゴールド(楽曲名)/プラチナ/プラチナ(楽曲名).
+TROPHY_RARE_TYPE_1_30 = {0: "Normal", 1: "Bronze", 2: "Silver", 3: "Gold", 4: "Gold (song name)", 5: "Platinum", 6: "Platinum (song name)"}
+
+def build_enums(db_dir: str, output_dir: str | None = None) -> dict:
     tables = {
         field: read_table(os.path.join(db_dir, f"{table}TableRecord.bin"))
         for field, table in DB_TABLES.items()
         if os.path.exists(os.path.join(db_dir, f"{table}TableRecord.bin"))
     }
-    return {"tables": tables, "ints": INT_ENUMS}
+    ints = INT_ENUMS
+    trophy_path = os.path.join(output_dir or "", "trophy", "trophy.json")
+    if os.path.exists(trophy_path):
+        with open(trophy_path, "r", encoding="utf-8") as f:
+            if any(t["rareType"] > 4 for t in json.load(f)):  # rarity ids were reordered in 1.30.00
+                ints = {**INT_ENUMS, "trophy.rareType": TROPHY_RARE_TYPE_1_30}
+    return {"tables": tables, "ints": ints}
 
 if __name__ == "__main__":
     import sys

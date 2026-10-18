@@ -1,3 +1,5 @@
+import json
+import os
 import xml.etree.ElementTree as ET
 
 from chuni.utils import (get_bool, get_int, get_ref, get_text_element,
@@ -39,3 +41,19 @@ def parse_course(file: str) -> dict:
         json_data["infos"] = [_info(i) for i in safe_find(root, "infos").iter("CourseMusicDataInfo")]
 
     return json_data
+
+def embed_course_rules(output_dir: str) -> None:
+    """Inlines each course's rule (courseRule.json: life, damage, explanation) into course.json: it only makes sense as part of a course."""
+    course_path, rule_path = (os.path.join(output_dir, n, f"{n}.json") for n in ("course", "courseRule"))
+    if not (os.path.exists(course_path) and os.path.exists(rule_path)):
+        return
+    with open(rule_path, "r", encoding="utf-8") as f:
+        rules = {r["id"]: r for r in json.load(f)}
+    with open(course_path, "r", encoding="utf-8") as f:
+        courses = json.load(f)
+    for course in courses:
+        rule = rules.get((course["rule"] or {}).get("id"))
+        if rule:
+            course["rule"] = rule
+    with open(course_path, "w", encoding="utf-8") as f:
+        json.dump(courses, f, indent=4, ensure_ascii=False)

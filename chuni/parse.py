@@ -5,7 +5,12 @@ from concurrent.futures import ThreadPoolExecutor
 from chuni.tables.chara import copy_chara_image, parse_chara
 from chuni.tables.aimeCollab import copy_aimeCollab_image, parse_aimeCollab
 from chuni.tables.chargeItem import parse_chargeItem
-from chuni.tables.course import parse_course
+from chuni.tables.course import embed_course_rules, parse_course
+from chuni.tables.courseRule import parse_courseRule
+from chuni.tables.duel import parse_duel
+from chuni.tables.duelMission import parse_duelMission
+from chuni.tables.mapIcon import copy_mapIcon_image, parse_mapIcon
+from chuni.tables.systemVoice import copy_systemVoice_files, parse_systemVoice
 from chuni.tables.quest import parse_quest
 from chuni.tables.name_plate import copy_namePlate_image, parse_namePlate
 from chuni.tables.reward import parse_reward
@@ -125,7 +130,7 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                 elif alt_dir is not None:
                     path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{id.zfill(6)}")
                     copy_func(path, parsed_data, data_output_dir)
-            elif data_type in ("namePlate", "aimeCollab"):
+            elif data_type in ("namePlate", "aimeCollab", "mapIcon", "systemVoice"):
                 path = os.path.join(directory, data_type, item.name)
                 copy_func(path, parsed_data, data_output_dir)
             elif data_type == "movie":
@@ -198,13 +203,18 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "mapBonus", parse_mapBonus, None, "mapBonus")
     process_data(directory, alt_dir, output_dir, "aimeCollab", parse_aimeCollab, copy_aimeCollab_image, "aimeCollab")
     process_data(directory, alt_dir, output_dir, "course", parse_course, None, "course")
+    process_data(directory, alt_dir, output_dir, "courseRule", parse_courseRule, None, "courseRule")
+    process_data(directory, alt_dir, output_dir, "duel", parse_duel, None, "duel")
+    process_data(directory, alt_dir, output_dir, "duelMission", parse_duelMission, None, "duelMission")
+    process_data(directory, alt_dir, output_dir, "mapIcon", parse_mapIcon, copy_mapIcon_image, "mapIcon")
+    process_data(directory, alt_dir, output_dir, "systemVoice", parse_systemVoice, copy_systemVoice_files, "systemVoice")
     process_data(directory, alt_dir, output_dir, "quest", parse_quest, None, "quest")
     process_data(directory, alt_dir, output_dir, "namePlate", parse_namePlate, copy_namePlate_image, "namePlate")
     db_dir = os.path.join(os.path.dirname(os.path.normpath(alt_dir or directory)), "db")
     if os.path.isdir(db_dir):
         ensure_directory(output_dir)
         with open(os.path.join(output_dir, "enums.json"), "w", encoding="utf-8") as f:
-            json.dump(build_enums(db_dir), f, indent=4, ensure_ascii=False)
+            json.dump(build_enums(db_dir, output_dir), f, indent=4, ensure_ascii=False)
     texture_dir = os.path.join(os.path.dirname(db_dir), "surfboard", "texture")
     if os.path.isdir(texture_dir):
         export_sprites(texture_dir, os.path.join(output_dir, "sprites"))
@@ -222,4 +232,5 @@ def process_directory(directory: str, output_dir: str, base_dir: str | None = No
     else:
         parse_AXXX_directory(directory, output_dir, base_dir)
     embed_map_details(output_dir)
+    embed_course_rules(output_dir)
     write_navigation(output_dir)
