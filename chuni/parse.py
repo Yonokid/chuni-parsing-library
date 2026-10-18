@@ -17,6 +17,7 @@ from chuni.tables.teamPresent import parse_teamPresent
 from chuni.tables.teamPresentPreset import parse_teamPresentPreset
 from chuni.tables.chara import copy_chara_image, parse_chara
 from chuni.tables.aimeCollab import copy_aimeCollab_image, parse_aimeCollab
+from chuni.tables.achievementPattern import parse_achievementPattern
 from chuni.tables.chargeItem import parse_chargeItem
 from chuni.tables.course import embed_course_rules, parse_course
 from chuni.tables.courseRule import parse_courseRule
@@ -236,6 +237,7 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "trophy", parse_trophy, None, "trophy")
     process_data(directory, alt_dir, output_dir, "ticket", parse_ticket, None, "ticket")
     process_data(directory, alt_dir, output_dir, "chargeItem", parse_chargeItem, None, "chargeItem")
+    process_data(directory, alt_dir, output_dir, "achievementPattern", parse_achievementPattern, None, "achievementPattern")
     process_data(directory, alt_dir, output_dir, "reward", parse_reward, None, "reward")
     process_data(directory, alt_dir, output_dir, "present", parse_present, None, "present")
     process_data(directory, alt_dir, output_dir, "stage", parse_stage, copy_stage_files, "stage")
