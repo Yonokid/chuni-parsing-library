@@ -127,8 +127,12 @@ def parse_condition(cond: ET.Element) -> dict:
         if value:
             data[field] = value
 
-    if get_text_element(cond, "charaData/rankMax") == "true":
-        data["anyCharaRankMax"] = True
+    if cond.find("charaData/rankMax") is not None:  # replaced by targetRank in 1.45
+        if get_text_element(cond, "charaData/rankMax") == "true":
+            data["anyCharaRankMax"] = True
+    target_rank = int_or_none(cond, "charaData/targetRank")
+    if target_rank:
+        data["charaTargetRank"] = target_rank
     if get_text_element(cond, "skillData/lvMax") == "true":
         data["anySkillLvMax"] = True
 

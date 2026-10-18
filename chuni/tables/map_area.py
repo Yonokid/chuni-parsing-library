@@ -15,6 +15,9 @@ def parse_mapArea(file: str) -> dict:
         json_data["name"] = get_text_element(root, "name/str")
         if root.find("mapBonusName") is not None:  # older versions have no area bonus
             json_data["mapBonus"] = get_ref(root, "mapBonusName")
+        if root.find("mapAreaBoostType") is not None:  # 1.45+
+            json_data["boostType"] = int(get_text_element(root, "mapAreaBoostType"))
+            json_data["boostMultiple"] = int(get_text_element(root, "mapAreaBoostMultiple"))  # percent
         json_data["grids"] = []
         grids = safe_find(root, "grids")
         for grid in grids.iter("MapAreaGridData"):

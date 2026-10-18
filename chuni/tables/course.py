@@ -6,7 +6,7 @@ from chuni.utils import (get_bool, get_int, get_ref, get_text_element,
                           safe_find)
 
 # CourseMusicDataInfo.type -> how the song slot is picked
-INFO_TYPES = {0: "selectMusic", 1: "selectLevel"}
+INFO_TYPES = {0: "selectMusic", 1: "selectLevel", 2: "selectMusicList"}  # 2: 1.45
 
 
 def _info(el: ET.Element) -> dict:
@@ -15,6 +15,13 @@ def _info(el: ET.Element) -> dict:
     if info_type == 0:
         data["music"] = get_ref(el, "selectMusic/musicName")
         data["difficulty"] = get_ref(el, "selectMusic/musicDiff")
+    elif info_type == 2:
+        lst = safe_find(el, "selectMusicList")
+        data["musicList"] = [
+            {"music": get_ref(m, "courseMusicData/name"), "difficulty": get_ref(m, "courseMusicData/diff")}
+            for m in lst.iter("CourseMusicListSubData")
+        ]
+        data["isRecordShown"] = get_bool(lst, "isRecordShown")
     else:
         level = safe_find(el, "selectLevel/fromLevel")
         data["fromLevel"] = {"id": get_int(level, "id"), "name": get_text_element(level, "data")}
