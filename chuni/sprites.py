@@ -44,6 +44,8 @@ SPRITES = {
         "ticketType_6": (386, 0, 770, 156),    # BONUS TRACK PRESENT
         "ticketType_7": (386, 157, 770, 312),  # マップ進行
         "ticketType_8": (386, 313, 770, 468),  # PREMIUM TRACK
+        # 1.40: type 10 (+10 squares) uses the "MAP BONUS +" banner; type 9 (statues) has none in the atlas.
+        "ticketType_10": (776, 0, 1160, 156),
     },
     # ticket.type banners, 384x156 at 156px pitch in the left column. Types 2/3/6/8 have no banner in the atlas.
     "CHU_UI_Common_ticket_00.dds": {
