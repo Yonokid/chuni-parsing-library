@@ -1,5 +1,6 @@
 """Simulate the AFNC motion modules of a stage and sample one loop of node transforms."""
 import math
+import random
 import struct
 
 from chuni.stage3d.export import IDENTITY, PROPAGATES, _matrix_key, _mul, _rotate, _scale, _translate
@@ -43,15 +44,48 @@ def _keys_matrix(keys: list[tuple], t: float) -> list[float]:
     return m
 
 
+def _pick(a: float, b: float, rng) -> float:
+    return a + (b - a) * rng.random() if b >= 0 else a
+
+
+def _resolve(key: tuple, rng) -> tuple:
+    """Rolls a random key (modes 4/5/7) into its fixed counterpart (0/1/3); [5] set = one roll for all axes."""
+    mode, k = key[0], list(key)
+    if mode in (4, 5):
+        u = rng.random()
+        k[13:16] = [a + (b - a) * (u if key[5] else rng.random()) for a, b in zip(key[13:16], key[17:20])]
+        k[0] = mode - 4
+    elif mode == 7:
+        k[0], k[9], k[11] = 3, _pick(key[9], key[10], rng), _pick(key[11], key[12], rng)
+        for lo, hi in ((13, 17), (21, 25)):
+            u = rng.random()
+            k[lo:lo + 3] = [a + (b - a) * (u if key[5] else rng.random()) for a, b in zip(key[lo:lo + 3], key[hi:hi + 3])]
+    return tuple(k)
+
+
+def _rolled(mod: dict, rng) -> dict:
+    """A module with its random values rolled, as the engine does each time a state is entered."""
+    if mod["type"] == 100:
+        return {**mod, "keys": [_resolve(k, rng) for k in mod["keys"]]}
+    if mod["type"] == 106:
+        entries = [{**e, "goal": [_pick(p, q, rng) for p, q in zip(e["goal"], e["alt"])] if e["random"] else e["goal"],
+                    "random": 0, "duration": _pick(e["duration"], e["duration_max"], rng), "duration_max": -1.0}
+                   for e in mod["entries"]]
+        return {**mod, "entries": entries}
+    return mod
+
+
 def _period(key: tuple) -> float:
     return max(key[9] if key[0] == 3 else _mid(key[9], key[10]), 1e-7)
 
 
 def _oscillate(key: tuple, t: float) -> list[float]:
-    """Oscillation key value at module time t (MomMatrix update 0x1dca320; the engine's sine takes 65536ths of a turn)."""
+    """Oscillation key value at module time t (MomMatrix update 0x1dca320; the engine's sine takes 65536ths of a turn).
+
+    Swings between A [13..15] and B [21..23] (setup 0x1dc9ce0; [17..19]/[25..27] are their random partners)."""
     phase = key[11] if key[0] == 3 else _mid(key[11], key[12])
     s = math.sin(math.radians(360 * t / _period(key) + phase))
-    return [(a + b) / 2 + (a - b) / 2 * s for a, b in zip(key[13:16], key[17:20])]
+    return [(a + b) / 2 + (a - b) / 2 * s for a, b in zip(key[13:16], key[21:24])]
 
 
 class _Goal:
@@ -99,26 +133,31 @@ class _Goal:
 class _Node:
     def __init__(self, tree: dict):
         self.tree, self.persist, self.state, self.rate = tree, IDENTITY, None, tree.get("rate", 1.0)
-        self.always = [m for lane_id, mods in tree["lanes"] if lane_id == -1 for m in mods]
+        self.rng = random.Random(f"{tree['type']}#{tree['index']}")  # seeded: re-exports stay byte-identical
+        self.always = [_rolled(m, self.rng) for lane_id, mods in tree["lanes"] if lane_id == -1 for m in mods]
         self.goals = [_Goal(m) for m in self.always if m["type"] == 106]
         self.enter(0)
 
     def enter(self, state: int):
         self.state, self.time = state, 0.0
-        self.active = [m for lane_id, mods in self.tree["lanes"] if lane_id == state for m in mods]
+        self.active = [_rolled(m, self.rng) for lane_id, mods in self.tree["lanes"] if lane_id == state for m in mods]
         self.lane_goals = [_Goal(m) for m in self.active if m["type"] == 106]
         self.timers = [[m, 0.0, m["repeat"]] for m in self.active if m["type"] == 751]
 
     def matrix(self) -> list[float]:
-        m = IDENTITY
+        """Modules apply in list order onto the node matrix (MomMatrixGoal: node = node * goal, 0x1dccf60), so a
+        goal listed before a scale key moves the node unscaled. Finished goals (persist) sit before the first goal."""
+        m, persisted = IDENTITY, False
+        goals = {id(g.mod): g for g in self.goals + self.lane_goals}
         for mod in self.always + self.active:
             if mod["type"] == 100 and mod["what"] == 0:
                 m = _mul(m, _keys_matrix(mod["keys"], self.time if mod in self.active else self.clock))
-        m = _mul(m, self.persist)
-        for g in self.goals + self.lane_goals:
-            if not g.done:
-                m = _mul(m, g.offset())
-        return m
+            elif mod["type"] == 106:
+                if not persisted:
+                    m, persisted = _mul(m, self.persist), True
+                if not goals[id(mod)].done:
+                    m = _mul(m, goals[id(mod)].offset())
+        return m if persisted else _mul(m, self.persist)
 
     def step(self):
         for g in self.goals + self.lane_goals:
@@ -132,7 +171,7 @@ class _Node:
                 timer[2] -= 1
                 for kind, target, _, arg, value, rand, _ in mod["actions"]:
                     if kind == 2 and target in (3, 5):
-                        self.enter(value if rand < 0 else (value + rand) // 2)
+                        self.enter(value if rand < 0 else self.rng.randint(min(value, rand), max(value, rand)))
                         return
             timer[1] += self.rate
         self.time += self.rate
@@ -202,6 +241,10 @@ def loop_frames(nodes: list[dict]) -> int:
             length /= tree.get("rate", 1.0)
             if length >= 1:
                 period = math.lcm(period or int(round(length)), int(round(length)))
+    if not period:  # nothing repeats: bake the longest one-shot goal (Future village: the planet turns 240° in 3 min)
+        once = [_Goal(m).length * (m["loops"] + 1) / t.get("rate", 1.0) for t in nodes for lane_id, mods in t["lanes"]
+                if lane_id == -1 for m in mods if m["type"] == 106 and m["loops"] >= 0]
+        period = int(round(max(once, default=0)))
     return min(period, MAX_FRAMES)
 
 
@@ -369,16 +412,22 @@ def decompose(m: list[float]) -> tuple[list[float], list[float], list[float]]:
 
 
 def reduce_keys(values: list[list[float]], eps: float = 1e-4) -> list[int]:
-    """Frame indices to keep so linear interpolation reproduces the samples (keeps both sides of jumps)."""
-    keep = [0]
-    for i in range(1, len(values) - 1):
-        a, b, c = values[keep[-1]], values[i], values[i + 1]
-        span = i + 1 - keep[-1]
-        f = (i - keep[-1]) / span
-        if any(abs(a[k] + (c[k] - a[k]) * f - b[k]) > eps * max(1.0, abs(b[k])) for k in range(len(b))):
-            keep.append(i)
-    keep.append(len(values) - 1)
-    return keep
+    """Frame indices to keep so linear interpolation reproduces the samples (keeps both sides of jumps).
+
+    Douglas-Peucker: split each span at its worst sample until every sample is within eps (relative above 1)."""
+    keep, spans = {0, len(values) - 1}, [(0, len(values) - 1)]
+    while spans:
+        s, e = spans.pop()
+        a, c, worst, at = values[s], values[e], eps, -1
+        for i in range(s + 1, e):
+            f, b = (i - s) / (e - s), values[i]
+            err = max(abs(a[k] + (c[k] - a[k]) * f - b[k]) / max(1.0, abs(b[k])) for k in range(len(b)))
+            if err > worst:
+                worst, at = err, i
+        if at >= 0:
+            keep.add(at)
+            spans += [(s, at), (at, e)]
+    return sorted(keep)
 
 
 if __name__ == "__main__":
@@ -387,10 +436,17 @@ if __name__ == "__main__":
     assert _ease(0, 0.5, 1) == 0.5 and abs(_ease(1, 1.0, 1) - 1) < 1e-9
     t, q, s = decompose(_mul(_translate(1, 2, 3), _rotate(0, 90, 0)))
     assert [round(v, 6) for v in t + s] == [1, 2, 3, 1, 1, 1] and abs(abs(q[1]) - math.sqrt(0.5)) < 1e-6
-    assert reduce_keys([[0], [1], [2], [2], [2], [9]]) == [0, 2, 4, 5]
+    assert reduce_keys([[0], [1], [2], [2], [2], [9]]) in ([0, 2, 4, 5], [0, 1, 2, 4, 5])
+    slow = [[math.sin(f / 1600 * 2 * math.pi) * 0.03] for f in range(14401)]  # a gentle sway must not flatten
+    assert len(reduce_keys(slow)) > 20
+    uniform = (4, 2, 0, 0, 0, 1) + (0.0,) * 7 + (1.2, 1.2, 1.2, 0.0, 0.5, 0.5, 0.5)  # random scale, one roll
+    k = _resolve(uniform, random.Random(1))
+    assert k[0] == 0 and k[13] == k[14] == k[15] and 0.5 <= k[13] <= 1.2
     assert _hermite([(0, 0.0, 1.0), (10, 10.0, 1.0)], 5) == 5.0 and _hermite([(0, 1.0, 0.0)], 9) == 1.0
-    osc = (3, 0, 0, 0, 0, 0, 0.0, -1.0, 1, 100.0, 60.0, 0.0, 0.0, 20.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    osc = (3, 0, 0, 0, 0, 0, 0.0, -1.0, 1, 100.0, 60.0, 0.0, 0.0, 20.0, 0.0, 0.0, 0.0, 9.0, 9.0, 9.0, 0.0) + (0.0,) * 8
     assert _oscillate(osc, 0) == [10, 0, 0] and [round(v, 6) for v in _oscillate(osc, 25)] == [20, 0, 0]
+    sway = osc[:13] + (0.0, 3.5, 0.0) + (0.0,) * 5 + (0.0, -3.5, 0.0) + (0.0,) * 5  # Yellow Ring's tunnel sway
+    assert _oscillate(sway, 0) == [0, 0, 0] and [round(v, 6) for v in _oscillate(sway, 75)] == [0, -3.5, 0]
     for path in sys.argv[1:]:
         clips = sample(scene_tree(*read_afb(path)[:2]))
         print(path.rsplit("/", 1)[-1], [(name, frames, len(tracks)) for name, frames, tracks in clips])

@@ -1,5 +1,6 @@
 """Export a stage .afb (st_*.afb / nf_*.afb) to an animated .glb for three.js."""
 import io
+import itertools
 import json
 import math
 import os
@@ -12,6 +13,7 @@ from chuni.stage3d.yabx import avts, f_floats, f_int, f_ref, f_refs, f_str, read
 
 MODEL_TYPE = 6001001  # star::SglBasicModel
 PROP_SVO, PROP_TEXTURES, PROP_MOTION = 200, 300, 400  # model properties: svo, textures, .uvc it plays
+INSTANCING_TYPE, PROP_INSTANCE_SVO = 6001010, 6003013  # star::SglInstancingModel: its svo, drawn at the parent's nodes
 
 
 def read_afb(path: str) -> tuple[bytes, set[int], list[tuple[str, bytes]]]:
@@ -57,7 +59,10 @@ FILTER_TYPES = {
     6001205: ("color", 7, {"color": 1, "saturation": 2, "brightness": 3, "contrast": 4, "gamma": 5, "power": 6}),
     6001213: ("bloom2", 30, {"retina": 1, "threshold": 2, "intensity": 4}),  # BloomRetinaRatio, BloomRange, BloomIntensity
 }
-PROPAGATES = {2, 3, MODEL_TYPE}
+PROPAGATES = {2, 3, MODEL_TYPE, INSTANCING_TYPE}
+# Node blend mode (record +0xc, sea::ShapeEnvBlendMode): 3 is the default (lights, cameras, groups), 4 adds (bubbles,
+# glows, neon), 6 looks like multiply (Steins;Gate line art); models mostly carry 0 and use their material.
+BLEND_ADD = 4
 GAME_CAMERA = {"eye": (0.0, 57.0, 44.0), "target": (0.0, 3.0, -146.5), "fov": 27.5, "near": 1.0, "far": 1500.0}
 
 
@@ -106,6 +111,8 @@ def _look_at(eye, target) -> list[float]:
     n = sum(v * v for v in z) ** 0.5 or 1
     z = [v / n for v in z]
     x = [z[2], 0.0, -z[0]]  # up (0, 1, 0) x z
+    if abs(z[0]) + abs(z[2]) < 1e-6:  # looking straight up or down: take -Z as up instead
+        x = [-z[1], 0.0, 0.0]
     n = sum(v * v for v in x) ** 0.5 or 1
     x = [v / n for v in x]
     y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]]
@@ -159,7 +166,7 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
         if common and ptr(common):
             # ponytail: on some nodes this points at node records instead; keep only module records
             mods, m = [], ptr(common)
-            while m and len(mods) < 256 and u32(m) in (100, 106, 250, 300, 401, 402, 403, 600, 751):
+            while m and len(mods) < 256 and u32(m) in (100, 106, 250, 300, 401, 402, 403, 600, 700, 751, 6002002, 6002003):
                 mods.append(m)
                 m = ptr(m + 0x20)
             yield -1, mods
@@ -200,9 +207,12 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
                     "actions": [struct.unpack_from("<7i", afnc, acts + 0x1C * a) for a in range(u32(info + 0x18) if acts else 0)]}
         return None
 
-    def argb(word: int) -> list[float]:
-        """D3DCOLOR (ARGB) -> [r, g, b, a] in 0..1."""
-        return [(word >> sh & 0xFF) / 255 for sh in (16, 8, 0, 24)]
+    def rgba(word: int) -> list[float]:
+        """Stage colour u32 (0xAABBGGRR, red in the low byte, unlike D3DCOLOR) -> [r, g, b, a] in 0..1.
+
+        Read as D3DCOLOR the Yellow Ring stage (its _y textures, ring tints, backdrop and ambient) turns blue/cyan.
+        """
+        return [(word >> sh & 0xFF) / 255 for sh in (0, 8, 16, 24)]
 
     def light(node) -> dict:
         """Light parameters from the class block (+0x5c): {u32 name ptr, 1, class fields..., colour properties}.
@@ -218,12 +228,12 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
                 o += 16
                 while o in ptrs or u32(o) == 0:
                     o += 4
-                colors.append(argb(u32(o)))
+                colors.append(rgba(u32(o)))
             o += 4
         for m in modules(node):
             info = ptr(m + 0x24)
             if u32(m) == 300 and info and ptr(info + 0x10) and u32(info + 0xC):
-                colors[:1] = [argb(u32(ptr(info + 0x10)))]
+                colors[:1] = [rgba(u32(ptr(info + 0x10)))]
         out = {"kind": kind, "colors": colors}
         if kind == "point":
             out["range"] = [f32(block + 8), f32(block + 12)]
@@ -251,7 +261,7 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
             t += max(f32(key), 0.0)
             values = []
             for name, word in fields.items():
-                values += argb(u32(key + 4 * word))[:3] if name == "color" else [f32(key + 4 * word)]
+                values += rgba(u32(key + 4 * word))[:3] if name == "color" else [f32(key + 4 * word)]
             keys.append([t / 60] + values)
         return {"kind": kind, "loop": bool(u32(b + 0xC)), "params": names, "keys": keys} if keys else None
 
@@ -278,7 +288,7 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
                 o += 16
                 while o in ptrs or u32(o) == 0:
                     o += 4
-                color = argb(u32(o))
+                color = rgba(u32(o))
                 break
             o += 4
         out = {"width": width, "height": height, "count": s32(b + 0xC), "mode": s32(b + 0x30),
@@ -306,15 +316,23 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
             return [list(struct.unpack_from("<3f", afnc, q)), list(struct.unpack_from("<3f", afnc, q + 0x10))]
 
         velocity, acceleration = vec_range(0x10, 0x34), vec_range(0x18, 0x28)
-        q = ptr(b + 4)  # list A: colour over life {type, ARGB, ARGB random max, 1, frame}
-        colors = [[f32(q + 0x1C * i + 0x10)] + argb(u32(q + 0x1C * i + 4)) for i in range(u32(b))] if q else []
+        # key frames are durations from the previous key (they sum to the lifetime); stored as absolute frames
+        at = lambda keys: [[t] + k[1:] for t, k in zip(itertools.accumulate(k[0] for k in keys), keys)]
+        q = ptr(b + 4)  # list A: colour over life {type, colour, colour random max, 1, frames since previous key}
+        colors = at([[f32(q + 0x1C * i + 0x10)] + rgba(u32(q + 0x1C * i + 4)) for i in range(u32(b))] if q else [])
         if not any(any(c[1:]) for c in colors):
             colors = []  # all transparent black: treated as "no colour keys" (otherwise the gear clouds vanish)
-        q = ptr(b + 0xC)  # list B: size multiplier over life {type, min, max, 0, 0, frame}
-        scales = [[f32(q + 0x20 * i + 0x14), (f32(q + 0x20 * i + 4) + f32(q + 0x20 * i + 8)) / 2] for i in range(u32(b + 8))] if q else []
+        q = ptr(b + 0xC)  # list B: size multiplier over life {type, min, max, 0, 0, frames since previous key}
+        scales = at([[f32(q + 0x20 * i + 0x14), (f32(q + 0x20 * i + 4) + f32(q + 0x20 * i + 8)) / 2] for i in range(u32(b + 8))] if q else [])
         start, end = f32(b + 0x80), f32(b + 0x88)
+        # emission (ctor 0x161e0e0): max(+0x68, +0x6c) particles every max(+0x60, 1e-4) frames, randomly down to
+        # min(+0x68, +0x6c) (+0x6c < 0 = fixed); the live count is capped at min(+0x54, rate * life)
+        hi = max(s32(b + 0x68), s32(b + 0x6c))
+        lo = hi if s32(b + 0x6c) < 0 else min(s32(b + 0x68), s32(b + 0x6c))
+        emit = (hi + lo) / 2 / max(f32(b + 0x60), 1e-4)
         return {"shape": s32(b + 0x30), "size": list(struct.unpack_from("<3f", afnc, b + 0x34)),
-                "count": s32(b + 0x54), "life": f32(b + 0x7c),
+                "count": min(s32(b + 0x54), int(hi / max(f32(b + 0x60), 1e-4) * f32(b + 0x7c))), "emit": emit,
+                "life": f32(b + 0x7c),
                 "startSize": [start, max(f32(b + 0x84), start) if f32(b + 0x84) >= 0 else start],
                 "endSize": [end, max(f32(b + 0x8c), end) if f32(b + 0x8c) >= 0 else end],
                 "velocity": velocity, "acceleration": acceleration, "colors": colors, "scales": scales,
@@ -331,11 +349,18 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
         [9] flags (bit 0/1: u1/v1 are sizes). 403 info: [0] mode (0 set, 1 scroll, 2 oscillate, 3 add once,
         4 add per update), [1] uv set, [2] interval, [3] phase, [4..5] speed or point A, [6..7] point B.
         """
-        stateful = any(u32(m) == 751 for _, mods in lanes(node) for m in mods)
-        out = []
+        return [m for lane_id, mods in uv_lanes(node) if lane_id == -1 or lane_id == 0 and not stateful(node)
+                for m in mods]
+
+    def stateful(node) -> bool:
+        return any(u32(m) == 751 for _, mods in lanes(node) for m in mods)
+
+    def uv_lanes(node) -> list[tuple[int, list[dict]]]:
+        """The UV modules of each lane (see uv_modules)."""
+        res = []
         for lane_id, mods in lanes(node):
-            if lane_id != -1 and (lane_id != 0 or stateful):
-                continue
+            out = []
+            res.append((lane_id, out))
             for m in mods:
                 info, kind = ptr(m + 0x24), u32(m)
                 if not info or kind not in (401, 402, 403):
@@ -354,7 +379,7 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
                 else:
                     out.append({"kind": "scroll", "mode": i(0), "set": i(1), "interval": fl(2), "phase": fl(3),
                                 "speed": [fl(4), fl(5)], "end": [fl(6), fl(7)]})
-        return out
+        return res
 
     def tint(node) -> dict | None:
         """MomMaterial (300) colour multiplier of a node as {"keys": [[seconds, r, g, b, a], ...], "loop": bool}.
@@ -363,17 +388,17 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
         A<->B with period [4] frames), [8] frames to reach this key from the previous one. Info: keys at +0x10,
         count +0xc, loop +0x18. None when it is constant white.
         ponytail: tints in state lanes restart whenever the state is re-entered, which the viewer can't replay
-        yet, so lane-0 tints are only used on nodes that never change state.
+        yet, so nodes that change state keep their lane-0 tint's first key as a constant (Yellow Ring's rings).
         """
         stateful = any(u32(m) == 751 for _, mods in lanes(node) for m in mods)
-        for m in (mods for lane_id, ms in lanes(node) if lane_id == -1 or lane_id == 0 and not stateful for mods in ms):
+        for lane_id, m in ((lane_id, m) for lane_id, ms in lanes(node) if lane_id in (-1, 0) for m in ms):
             info = ptr(m + 0x24)
             if u32(m) != 300 or not info or not ptr(info + 0x10) or not u32(info + 0xC):
                 continue
             base, keys, t = ptr(info + 0x10), [], 0.0
             for k in range(u32(info + 0xC)):
                 o = base + 0x28 * k
-                a, b, mode = argb(u32(o)), argb(u32(o + 4)), s32(o + 12)
+                a, b, mode = rgba(u32(o)), rgba(u32(o + 4)), s32(o + 12)
                 t += max(f32(o + 0x20), 0.0)
                 if mode == 5 and f32(o + 0x10) > 0:  # oscillation: sample one period
                     period = f32(o + 0x10)
@@ -383,6 +408,8 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
                 else:
                     keys.append([t / 60] + (a if mode == 0 else [(x + y) / 2 for x, y in zip(a, b)]))
             loop = bool(s32(info + 0x18)) or any(s32(base + 0x28 * k + 12) == 5 for k in range(u32(info + 0xC)))
+            if stateful and lane_id == 0:
+                keys, loop = keys[:1], False
             if len(keys) == 1 and keys[0][1:] == [1.0, 1.0, 1.0, 1.0]:
                 return None
             return {"keys": keys, "loop": loop}
@@ -412,8 +439,10 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
                     elif what in (1, 2) and key[1] == 0 and (v := _key_value(key)):
                         look["eye" if what == 1 else "target"] = tuple(v)
         textures = props.get(PROP_TEXTURES, [])
-        out = {"type": u32(node), "index": s32(node + 0x24), "matrix": matrix,
-               "svo": props[PROP_SVO][0] if u32(node) == MODEL_TYPE and props.get(PROP_SVO) else -1,
+        out = {"type": u32(node), "index": s32(node + 0x24), "id": s32(node + 4), "matrix": matrix, "blend": u32(node + 0xC),
+               "svo": props[PROP_SVO][0] if u32(node) == MODEL_TYPE and props.get(PROP_SVO) else
+                      props[PROP_INSTANCE_SVO][0] if u32(node) == INSTANCING_TYPE and props.get(PROP_INSTANCE_SVO) else -1,
+               "svos": props.get(PROP_SVO, []) if u32(node) == MODEL_TYPE else [],  # variants (Future village roofs a-d)
                "motion": props[PROP_MOTION][0] if u32(node) == MODEL_TYPE and props.get(PROP_MOTION) else -1,
                "textures": {name: textures[i] for name, i in slots.items() if i < len(textures) and textures[i] >= 0},
                "children": [], "rate": rate,
@@ -433,10 +462,16 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
             out["primitive"] = primitive(node, props.get(PROP_TEXTURES, []))
         if uv := uv_modules(node):
             out["uv"] = uv
+        # states that only differ by their UV modules (Future village houses: 8 lanes each setting one palette
+        # column, MomChangeState picks one at random): each placed copy gets one of them
+        if stateful(node) and len(alts := [mods for lane_id, mods in uv_lanes(node) if lane_id >= 0 and mods]) > 1:
+            out["uv_states"] = alts
         if u32(node) == CAMERA_TYPE:  # active only with both eye and target (SglCamera ctor 0x1d95390)
             params, cam = ptr(node + 0x5C), dict(GAME_CAMERA)
             if "eye" in look and "target" in look:
                 cam.update(look)
+            elif params and s32(params + 0x44) >= 0 and s32(params + 0x50) >= 0:
+                out["look_at"] = (s32(params + 0x44), s32(params + 0x50))  # eye / target node ids (node +4)
             for name, off in (("fov", 0xC), ("near", 0x10), ("far", 0x14)):
                 if params and (v := struct.unpack_from("<f", afnc, params + off)[0]) > 0:
                     cam[name] = v
@@ -447,12 +482,29 @@ def scene_tree(afnc: bytes, ptrs: set[int]) -> dict:
             child = ptr(child + 0x54)
         return out
 
-    return visit(ptr(0x24))
+    tree, at = visit(ptr(0x24)), {}
+
+    def place(t, parent):  # world position of every node with an id (t = 0)
+        m = _mul(parent, t["matrix"])
+        if t["id"] >= 0:
+            at[t["id"]] = tuple(m[12:15])
+        for c in t["children"]:
+            place(c, m)
+
+    def aim(t):  # cameras that look from one node at another (Future village: ids 1000 -> 999)
+        if "look_at" in t and all(i in at for i in t["look_at"]) and at[t["look_at"][0]] != at[t["look_at"][1]]:
+            t["camera"].update(eye=at[t["look_at"][0]], target=at[t["look_at"][1]])
+        for c in t["children"]:
+            aim(c)
+
+    place(tree, IDENTITY)
+    aim(tree)  # ponytail: assumes the camera's parents don't move it; the nodes' t = 0 positions only
+    return tree
 
 
 def scene_models(tree: dict) -> list[dict]:
-    """Every SglBasicModel node in the tree."""
-    found = [tree] if tree["type"] == MODEL_TYPE else []
+    """Every SglBasicModel / SglInstancingModel node in the tree."""
+    found = [tree] if tree["type"] in (MODEL_TYPE, INSTANCING_TYPE) and tree["svo"] >= 0 else []
     for child in tree["children"]:
         found += scene_models(child)
     return found
@@ -542,7 +594,6 @@ class _StageExporter:
         self.resources = resources
         self.glb = _Glb()
         self.images: dict[str, int | None] = {}  # dds name -> texture index
-        self.opaque: dict[str, bool] = {}  # dds name -> no transparency at all
         self.meshes: dict[tuple, int] = {}  # (svo name, swaps) -> mesh index
         self.vertex_cache: dict[tuple, dict[str, int]] = {}
         self.node_ids: dict[int, int] = {}  # id(scene tree node) -> glTF node
@@ -560,7 +611,6 @@ class _StageExporter:
                 self.images[name] = None
                 return None
             img = img.convert("RGBA")
-            self.opaque[name] = img.getchannel("A").getextrema()[0] == 255
             webp = io.BytesIO()
             img.save(webp, "WEBP", quality=90)  # ~10x smaller than PNG for these
 
@@ -719,16 +769,18 @@ class _StageExporter:
             self.svo_objs[svo_name] = read_yabx(next(d for kind, d in avts(svo).values() if kind == 0))
         return self.svo_objs[svo_name]
 
-    def mesh(self, svo_name: str, svo: bytes, swaps: dict[str, int], shapes: tuple = ()) -> int | None:
-        """Mesh of an svo (every Shape, or only the given Shape object indices)."""
+    def mesh(self, svo_name: str, svo: bytes, swaps: dict[str, int], shapes: tuple = (), additive: bool = False) -> int | None:
+        """Mesh of an svo (every Shape, or only the given Shape object indices); `additive` from the node's blend mode."""
         g = self.glb.gltf
-        key = (svo_name, tuple(sorted(swaps.items())), shapes)
+        key = (svo_name, tuple(sorted(swaps.items())), shapes, additive)
         if key not in self.meshes:
             chunks = avts(svo)
             objs = read_yabx(next(d for kind, d in chunks.values() if kind == 0))
             prims = [p for i, o in enumerate(objs) if o["_class"] == "stevia::Shape" and (not shapes or i in shapes)
                      if (p := self.primitive(objs, o, chunks, swaps))]
             self.meshes[key] = None
+            for p in prims if additive else []:  # materials are made per primitive, so this mesh owns them
+                g["materials"][p["material"]].update(alphaMode="BLEND", extras={"additive": True})
             if prims:  # glTF forbids meshes without primitives
                 g["meshes"].append({"name": svo_name, "primitives": prims})
                 self.meshes[key] = len(g["meshes"]) - 1
@@ -737,18 +789,43 @@ class _StageExporter:
 
         return self.meshes[key]
 
-    def node(self, tree: dict) -> int | None:
-        """glTF node for an AFNC subtree, or None when it holds no models."""
+    def node(self, tree: dict, variant: int = 0) -> int | None:
+        """glTF node for an AFNC subtree, or None when it holds no models. `variant` picks one of a model's svos
+        (property 200 lists several) for the n-th copy placed by a locator set."""
         res = self.resources
         mesh = rig = None
+        if len(tree.get("svos", [])) > 1 and tree["svos"][variant % len(tree["svos"])] != tree["svo"]:
+            tree = {**tree, "svo": tree["svos"][variant % len(tree["svos"])]}
+        locator_leaves = []
         if 0 <= tree["svo"] < len(res):
             svo_name, svo = res[tree["svo"]]
             objs = self.objects(svo_name, svo)
             skinned = any(o["_class"] == "stevia::VertexElement" and f_int(o["_semantics"]) in (1, 2) for o in objs)
-            rig = None if skinned else self.rigid(svo_name, tree)  # rigid motion: the svo's nodes carry the shapes
-            if rig is None:
-                mesh = self.mesh(svo_name, svo, tree["textures"])
-        children = [i for c in tree["children"] if (i := self.node(c)) is not None] + (rig or [])
+            # SglInstancingModel children draw at this svo's nodes; its own shapes are placeholders (Maya lambert1)
+            instanced = any(c["type"] == INSTANCING_TYPE for c in tree["children"])
+            rigged = None if skinned else self.rigid(svo_name, tree, not instanced)  # the svo's nodes carry the shapes
+            if rigged is None:
+                mesh = self.mesh(svo_name, svo, tree["textures"], additive=tree["blend"] == BLEND_ADD)
+            else:
+                rig, bone_nodes, bones = rigged
+                # a locator set (pos_house_set: 64 empty nodes; iemove: one animated node) places all the node's
+                # children at every leaf node, so they follow its pose and motion; STAR's pos_a (placeholder
+                # building blocks) places only its SglInstancingModel children (the window meshes) there
+                shapeless = not any(o["_class"] == "stevia::Shape" for o in objs)
+                if shapeless or instanced:
+                    parents = {b["parent"] for b in bones}
+                    locator_leaves = [bone_nodes[i] for i in range(len(bones)) if i not in parents]
+                    placed_kids = [c for c in tree["children"] if shapeless or c["type"] == INSTANCING_TYPE]
+        g = self.glb.gltf
+        if locator_leaves:
+            # ponytail: copies share one AFNC subtree, so scene-clip tracks (node_ids) drive only the last copy
+            for k, leaf in enumerate(locator_leaves):
+                kids = [i for c in placed_kids if (i := self.node(c, k)) is not None]
+                if kids:
+                    g["nodes"][leaf].setdefault("children", []).extend(kids)
+            children = [i for c in tree["children"] if all(c is not p for p in placed_kids) and (i := self.node(c)) is not None] + rig
+        else:
+            children = [i for c in tree["children"] if (i := self.node(c)) is not None] + (rig or [])
         g = self.glb.gltf
         if "camera" in tree and "cameras" not in g:  # first camera only: the stage's background camera
             cam = tree["camera"]
@@ -788,15 +865,14 @@ class _StageExporter:
         if (part := tree.get("particles")) and part["textures"] and part["count"] > 0:
             tex = self.texture(*res[part["textures"][0]]) if 0 <= part["textures"][0] < len(res) else None
             if tex is not None:  # an emitter node: the viewer simulates it (extras.particles), placed by its matrix
-                # ponytail: the blend flag isn't decoded; glow sprites without alpha only make sense added
-                additive = self.opaque.get(res[part["textures"][0]][0], False)
+                additive = tree["blend"] == BLEND_ADD
                 en = {"name": "particles", "extras": {"particles": {**part, "texture": tex, "tint": tree.get("tint"),
                                                                     "additive": additive, "rate": tree["rate"]}}}
                 if tree["matrix"] != IDENTITY:
                     en["matrix"] = tree["matrix"]
                 g["nodes"].append(en)
                 children.append(len(g["nodes"]) - 1)
-        if (prim := tree.get("primitive")) and prim["textures"]:
+        if prim := tree.get("primitive"):
             pn = self.primitive_node(tree, prim)
             if pn is not None:
                 children.append(pn)
@@ -816,12 +892,16 @@ class _StageExporter:
             node["matrix"] = tree["matrix"]
         if tree.get("tint"):  # colour/alpha multiplier for the meshes under this node (viewer applies it)
             node.setdefault("extras", {})["tint"] = tree["tint"]
-        if 0 <= tree.get("motion", -1) < len(res) and res[tree["motion"]][0].lower().endswith(".uvc"):
+        uv = list(tree.get("uv", []))
+        if tree.get("uv_states"):  # one state per copy, picked like the engine's random MomChangeState (seeded)
+            import random
+            uv += random.Random(f"{tree['index']}:{variant}").choice(tree["uv_states"])
+        elif 0 <= tree.get("motion", -1) < len(res) and res[tree["motion"]][0].lower().endswith(".uvc"):
             from chuni.stage3d.anim import uv_motion
-            if uvm := uv_motion(res[tree["motion"]][1]):  # .uvc UV offset animation of the model
-                tree["uv"] = tree.get("uv", []) + [uvm]
-        if tree.get("uv"):  # UV scroll / rect / flipbook for the meshes under this node (viewer applies it)
-            node.setdefault("extras", {})["uv"] = tree["uv"]
+            if uvm := uv_motion(res[tree["motion"]][1]):  # .uvc UV offset animation (state UV modules override it)
+                uv.append(uvm)
+        if uv:  # UV scroll / rect / flipbook for the meshes under this node (viewer applies it)
+            node.setdefault("extras", {})["uv"] = uv
         if "extras" in node and tree["rate"] != 1:  # SglTimeRate: tint / uv time runs this many times faster
             node["extras"]["rate"] = tree["rate"]
         g["nodes"].append(node)
@@ -852,15 +932,18 @@ class _StageExporter:
                 self.motions.append((f"motion {self.resources[tree['motion']][0]}", frames, tracks, tree["rate"]))
         return len(g["skins"]) - 1, [first + i for i, b in enumerate(bones) if b["parent"] is None]
 
-    def rigid(self, svo_name: str, tree: dict) -> list[int] | None:
-        """For an unskinned svo whose .uvc animates its nodes: the svo node tree with each node's shapes under it."""
-        if not (0 <= tree["motion"] < len(self.resources)) or not self.resources[tree["motion"]][0].lower().endswith(".uvc"):
-            return None
+    def rigid(self, svo_name: str, tree: dict, shapes: bool = True) -> tuple[list[int], list[int], list[dict]] | None:
+        """For an unskinned svo whose nodes are posed (Bakemono's classroom: one node turned -90° about Y and moved)
+        or animated by its .uvc: the svo node tree with each node's shapes under it."""
         from chuni.stage3d.anim import motion, sample_motion
-        frames, nodes = motion(self.resources[tree["motion"]][1])
+        frames, nodes = 0, {}
+        if 0 <= tree["motion"] < len(self.resources) and self.resources[tree["motion"]][0].lower().endswith(".uvc"):
+            frames, nodes = motion(self.resources[tree["motion"]][1])
         objs = self.objects(svo_name, self.resources[tree["svo"]][1])
         bones = _skeleton(objs)
-        if not frames or not any(b["name"] in nodes for b in bones):
+        posed = any(b["translation"] != [0, 0, 0] or b["rotation"] != [0, 0, 0, 1] or b["scale"] != [1, 1, 1] for b in bones)
+        animated = frames and any(b["name"] in nodes for b in bones)
+        if not animated and not posed:
             return None
         g, first = self.glb.gltf, len(self.glb.gltf["nodes"])
         for b in bones:
@@ -868,28 +951,32 @@ class _StageExporter:
         for i, b in enumerate(bones):
             if b["parent"] is not None:
                 g["nodes"][first + b["parent"]].setdefault("children", []).append(first + i)
-            for shape in b["shapes"]:  # vertices are in model space: undo the node's bind pose
-                if (m := self.mesh(svo_name, self.resources[tree["svo"]][1], tree["textures"], (shape,))) is None:
+            for shape in b["shapes"] if shapes else []:  # vertices are in model space: undo the node's bind pose
+                if (m := self.mesh(svo_name, self.resources[tree["svo"]][1], tree["textures"], (shape,),
+                                   tree["blend"] == BLEND_ADD)) is None:
                     continue
                 child = {"name": f"{b['name']} shape", "mesh": m, "matrix": _row_major(f_floats(objs[shape]["_meshBindMatrix"]))}
                 if child["matrix"] == IDENTITY:
                     del child["matrix"]
                 g["nodes"].append(child)
                 g["nodes"][first + i].setdefault("children", []).append(len(g["nodes"]) - 1)
-        by_name = {b["name"]: (first + i, b) for i, b in enumerate(bones)}
-        tracks = {by_name[n][0]: sample_motion(m, frames, by_name[n][1]["rotation"]) for n, m in nodes.items() if n in by_name}
-        self.motions.append((f"motion {self.resources[tree['motion']][0]}", frames, tracks, tree["rate"]))
-        return [first + i for i, b in enumerate(bones) if b["parent"] is None]
+        if animated:
+            by_name = {b["name"]: (first + i, b) for i, b in enumerate(bones)}
+            tracks = {by_name[n][0]: sample_motion(m, frames, by_name[n][1]["rotation"]) for n, m in nodes.items() if n in by_name}
+            self.motions.append((f"motion {self.resources[tree['motion']][0]}", frames, tracks, tree["rate"]))
+        return [first + i for i, b in enumerate(bones) if b["parent"] is None], [first + i for i in range(len(bones))], bones
 
     def primitive_node(self, tree: dict, prim: dict) -> int | None:
         """SglPrimitive as a centred w x h quad in the XY plane (unlit, alpha blended), placed by its own matrix.
-        A flipbook that switches images gets the whole texture list as extras.images."""
+        A flipbook that switches images gets the whole texture list as extras.images. Untextured quads are plain
+        colour (Kagepro's notes field is two of them: a white lane and a dark centre line)."""
         g, res = self.glb.gltf, self.resources
-        names = [res[t][0] for t in prim["textures"] if 0 <= t < len(res)]
+        names = [res[t][0] for t in prim["textures"] if 0 <= t < len(res)] or ["colour"]
         texs = [self.texture(res[t][0], res[t][1]) for t in prim["textures"] if 0 <= t < len(res)]
-        if not texs or texs[0] is None:
+        if texs and texs[0] is None:
             return None
-        key = ("primitive", prim["width"], prim["height"], names[0], tuple(prim["color"]), "screen" in prim)
+        additive = tree["blend"] == BLEND_ADD  # AIR's line08 strip and lens flares
+        key = ("primitive", prim["width"], prim["height"], names[0], tuple(prim["color"]), "screen" in prim, additive)
         if key not in self.meshes:
             w, h = prim["width"] / 2, prim["height"] / 2
             pos = struct.pack("<12f", -w, h, 0, w, h, 0, w, -h, 0, -w, -h, 0)
@@ -899,9 +986,12 @@ class _StageExporter:
                      "TEXCOORD_0": self.glb.accessor(struct.pack("<8f", 0, 0, 1, 0, 1, 1, 0, 1), 5126, 4, "VEC2", 34962)}
             idx = self.glb.accessor(struct.pack("<6H", 0, 3, 2, 0, 2, 1), 5123, 6, "SCALAR", 34963)
             mat = {"name": names[0], "doubleSided": True, "alphaMode": "BLEND",
-                   "pbrMetallicRoughness": {"baseColorTexture": {"index": texs[0]}, "baseColorFactor": prim["color"],
-                                            "metallicFactor": 0, "roughnessFactor": 1},
+                   "pbrMetallicRoughness": {"baseColorFactor": prim["color"], "metallicFactor": 0, "roughnessFactor": 1},
                    "extensions": {"KHR_materials_unlit": {}}}
+            if texs:
+                mat["pbrMetallicRoughness"]["baseColorTexture"] = {"index": texs[0]}
+            if additive:
+                mat["extras"] = {"additive": True}
             used = g.setdefault("extensionsUsed", [])
             if "KHR_materials_unlit" not in used:
                 used.append("KHR_materials_unlit")
@@ -968,7 +1058,7 @@ def export_stage(afb_path: str, glb_path: str) -> int:
     from chuni.stage3d.anim import sample
     exporter.animate(sample(tree))
     # svo resources no scene node references still get exported, at their file position
-    placed = {m["svo"] for m in scene_models(tree)}
+    placed = {s for m in scene_models(tree) for s in [m["svo"], *m.get("svos", [])]}
     for i, (name, data) in enumerate(resources):
         if name.lower().endswith(".svo") and i not in placed and (mesh := exporter.mesh(name, data, {})) is not None:
             exporter.glb.gltf["nodes"].append({"name": name, "mesh": mesh})
@@ -985,6 +1075,8 @@ if __name__ == "__main__":
     assert [round(v, 6) for v in m[:3] + m[12:15]] == [0, 1, 0, 1, 2, 3]
     look = _look_at((0, 0, 10), (0, 0, 0))  # from +z towards the origin: no rotation
     assert [round(v, 6) for v in look] == [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 10, 1]
+    down = _look_at((0, 10, 0), (0, 0, 0))  # straight down: still a rotation (unit, orthogonal axes)
+    assert all(abs(sum(down[c * 4 + r] ** 2 for r in range(3)) - 1) < 1e-6 for c in range(3))
     for path in sys.argv[1:-1]:
         out = os.path.join(sys.argv[-1], os.path.splitext(os.path.basename(path))[0] + ".glb")
         afnc, ptrs, resources = read_afb(path)
