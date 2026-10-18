@@ -38,6 +38,8 @@ def parse_music(file: str) -> dict:
         json_data["previewEndTime"] = int(root.findtext("previewEndTime", "0"))
         if root.find("enableUltima") is not None:
             json_data["enableUltima"] = get_bool(root, "enableUltima")
+        if root.find("isGiftMusic") is not None:  # 2.10+
+            json_data["isGiftMusic"] = get_bool(root, "isGiftMusic")
         json_data["firstLock"] = get_text_element(root, "firstLock") == "true"
         json_data["charts"] = []
         fumens = safe_find(root, "fumens")

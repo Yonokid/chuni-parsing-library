@@ -10,6 +10,7 @@ EFFECTS = {
     "avatarChanceData": [],
     "duelCriticalData": ["criticalRateOnNormal", "criticalRateOnTodome"],
     "gamePointData": ["count"],
+    "battleRuleData": [],  # 2.10+
 }
 
 

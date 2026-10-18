@@ -16,10 +16,13 @@ def parse_quest(file: str) -> dict:
         json_data["charaWorks"] = get_ref_list(root, "charaWorks/list")
         json_data["charas"] = get_ref_list(root, "charas/list")
         json_data["priority"] = get_int(root, "priority")
+        if root.find("hideInfo") is not None:  # 2.10+
+            json_data["hideInfo"] = get_bool(root, "hideInfo")
         json_data["rewards"] = [{
             "sumRank": get_int(i, "sumRank"),
             "trophy": get_ref(i, "keyTrophyName"),
             "namePlate": get_ref(i, "keyNamePlateName"),
+            **({"chara": get_ref(i, "keyCharaName")} if i.find("keyCharaName") is not None else {}),
             "rewards": get_ref_list(i, "rewardName/list"),
         } for i in safe_find(root, "info").iter("QuestRewardDataInfo")]
 

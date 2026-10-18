@@ -5,6 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 from chuni.tables.avatarAccessory import copy_avatarAccessory_image, parse_avatarAccessory
 from chuni.tables.avatarAccessoryGacha import parse_avatarAccessoryGacha
 from chuni.tables.battleRatingRange import parse_battleRatingRange
+from chuni.tables.charaWorks import parse_charaWorks
+from chuni.tables.playReward import parse_playReward, parse_playRewardSet
 from chuni.tables.battleReward import parse_battleReward
 from chuni.tables.dailyBonus import parse_dailyBonus, parse_dailyBonusPreset
 from chuni.tables.frame import copy_frame_image, parse_frame
@@ -230,6 +232,9 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "symbolChat", parse_symbolChat, None, "symbolChat")
     process_data(directory, alt_dir, output_dir, "battleReward", parse_battleReward, None, "battleReward")
     process_data(directory, alt_dir, output_dir, "battleRatingRange", parse_battleRatingRange, None, "battleRatingRange")
+    process_data(directory, alt_dir, output_dir, "charaWorks", parse_charaWorks, None, "charaWorks")
+    process_data(directory, alt_dir, output_dir, "playReward", parse_playReward, None, "playReward")
+    process_data(directory, alt_dir, output_dir, "playRewardSet", parse_playRewardSet, None, "playRewardSet")
     process_data(directory, alt_dir, output_dir, "dailyBonus", parse_dailyBonus, None, "dailyBonus")
     process_data(directory, alt_dir, output_dir, "dailyBonusPreset", parse_dailyBonusPreset, None, "dailyBonusPreset")
     process_data(directory, alt_dir, output_dir, "gacha", parse_gacha, copy_gacha_image, "gacha")

@@ -110,7 +110,8 @@ TROPHY_RARE_TYPE_1_30 = {0: "Normal", 1: "Bronze", 2: "Silver", 3: "Gold", 4: "G
 # 2.00.00 (NEW!!) renumbers several enums: skills become seeds, MASTER/ULTIMA/WORLD'S END are separate tickets.
 INT_ENUMS_2_00 = {
     "ticket.type": {0: "Character rank boost", 1: "MASTER play", 2: "ULTIMA play", 3: "WORLD'S END play",
-                    4: "Map progress boost", 5: "Character rank limit unlock"},  # 5: statues, no banner
+                    4: "Map progress boost", 5: "Character rank limit unlock",  # 5: statues, no banner
+                    7: "EXP stock"},  # 2.10: recycleCharaExp; 6 (playMusicPlus) unused
     "reward.type": {**INT_ENUMS["reward.type"], 4: "Skill seed"},
     "chara.rank.type": {1: "Skill seed", 2: "Flavor text"},
     # Gem icons of CHU_UI_SkillData_00.dds, named by the skills that use each category.
