@@ -105,7 +105,9 @@ INT_ENUMS = {
 }
 
 # 1.30.00 adds separate "(楽曲名)" plates: CHU_UI_Userbox_00_v11.dds legend ノーマル/ブロンズ/シルバー/ゴールド/ゴールド(楽曲名)/プラチナ/プラチナ(楽曲名).
-TROPHY_RARE_TYPE_1_30 = {0: "Normal", 1: "Bronze", 2: "Silver", 3: "Gold", 4: "Gold (song name)", 5: "Platinum", 6: "Platinum (song name)", 7: "Rainbow"}  # 7: 2.00 (CHU_UI_title_rank_00_v10 sixth plate)
+TROPHY_RARE_TYPE_1_30 = {0: "Normal", 1: "Bronze", 2: "Silver", 3: "Gold", 4: "Gold (song name)", 5: "Platinum", 6: "Platinum (song name)", 7: "Rainbow",  # 7: 2.00 (CHU_UI_title_rank_00_v10 sixth plate)
+                           # 18-22 (2.30) named from their trophies; 9-11, 13-17 are unnamed (no plate art cut for them)
+                           18: "Spirit", 19: "Tribute", 20: "Legend", 21: "KOP Finalist", 22: "KOP Champion"}
 
 # 2.00.00 (NEW!!) renumbers several enums: skills become seeds, MASTER/ULTIMA/WORLD'S END are separate tickets.
 INT_ENUMS_2_00 = {

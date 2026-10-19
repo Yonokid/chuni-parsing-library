@@ -150,12 +150,14 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                 if base is not None and any(os.path.isdir(os.path.join(d, "music", f"music{base:04d}")) for d in (directory, alt_dir) if d):
                     continue  # merged into the base song, which brings the audio and jacket
                 cue_id = str(parsed_data["cueFile"]["id"]) if parsed_data["cueFile"] else id
-                path = os.path.join(directory, related_dir_name, f"{related_dir_name}{cue_id.zfill(6)}")
-                if os.path.exists(path):
+                # the cue can ship in another Option than the song's XML (2.30: music2743, 8299)
+                name = f"{related_dir_name}{cue_id.zfill(6)}"
+                candidates = [os.path.join(d, related_dir_name, name) for d in (directory, alt_dir, *sibling_options(directory)) if d is not None]
+                path = next((c for c in candidates if os.path.exists(c)), None)
+                if path is not None:
                     copy_func(path, parsed_data, data_output_dir)
-                elif alt_dir is not None:
-                    path = os.path.join(alt_dir, related_dir_name, f"{related_dir_name}{cue_id.zfill(6)}")
-                    copy_func(path, parsed_data, data_output_dir)
+                elif alt_dir is not None:  # missing everywhere: copy_func reports it
+                    copy_func(candidates[1], parsed_data, data_output_dir)
                 path = os.path.join(directory, data_type, f"{data_type}{id.zfill(4)}")
                 copy_jacket(path, parsed_data, data_output_dir)
             elif data_type == "chara":
