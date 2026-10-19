@@ -191,14 +191,21 @@ def _dxt5_image(data: bytes, width: int, height: int):
 
 
 def export_emote(path: str, out_dir: str, name: str) -> dict:
-    """Writes <name>.json (the motion tree, binary chunks replaced by {"$res": index}) and <name>_<i>.webp per texture."""
+    """Writes <name>.json (the motion tree, binary chunks replaced by {"$res": index}) and one webp per texture atlas.
+
+    Each source (`tex`, or `tex#000`... for models with several atlases) gets its `texture.pixel` replaced by the webp
+    file name: <name>.webp for a lone `tex`, <name>_<n>.webp (n = order of the sources) otherwise.
+    """
     import json
     import os
     root = load_psb(path)
-    tex = root.get("source", {}).get("tex", {}).get("texture", {})
-    if tex.get("type") == "DXT5":
+    sources = {k: v for k, v in root.get("source", {}).items() if isinstance(v, dict) and "texture" in v}
+    for n, (key, src) in enumerate(sources.items()):
+        tex = src["texture"]
+        if tex.get("type") != "DXT5" or not isinstance(tex.get("pixel"), Res):
+            continue
         img = _dxt5_image(tex["pixel"].data, tex["width"], tex["height"])
-        tex["pixel"] = f"{name}.webp"
+        tex["pixel"] = f"{name}.webp" if len(sources) == 1 else f"{name}_{n}.webp"
         img.save(os.path.join(out_dir, tex["pixel"]))
     with open(os.path.join(out_dir, f"{name}.json"), "w", encoding="utf-8") as f:
         json.dump(_jsonable(root), f, ensure_ascii=False)

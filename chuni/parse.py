@@ -26,6 +26,7 @@ from chuni.tables.course import embed_course_rules, parse_course
 from chuni.tables.courseRule import parse_courseRule
 from chuni.tables.duel import parse_duel
 from chuni.tables.duelMission import parse_duelMission
+from chuni.tables.mate import copy_mate_image, parse_mate
 from chuni.tables.mapIcon import copy_mapIcon_image, parse_mapIcon
 from chuni.tables.systemVoice import copy_systemVoice_files, parse_systemVoice
 from chuni.tables.quest import parse_quest
@@ -173,7 +174,7 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
                     if candidates:  # none existing: copy_func reports the first as missing
                         path = next((c for c in candidates if os.path.exists(c)), candidates[0])
                         copy_func(path, parsed_data, data_output_dir)
-            elif data_type in ("namePlate", "aimeCollab", "mapIcon", "systemVoice", "avatarAccessory", "frame", "gacha"):
+            elif data_type in ("namePlate", "aimeCollab", "mapIcon", "systemVoice", "avatarAccessory", "frame", "gacha", "mate"):
                 path = os.path.join(directory, data_type, item.name)
                 copy_func(path, parsed_data, data_output_dir)
             elif data_type == "movie":
@@ -264,6 +265,7 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "duel", parse_duel, None, "duel")
     process_data(directory, alt_dir, output_dir, "duelMission", parse_duelMission, None, "duelMission")
     process_data(directory, alt_dir, output_dir, "mapIcon", parse_mapIcon, copy_mapIcon_image, "mapIcon")
+    process_data(directory, alt_dir, output_dir, "mate", parse_mate, copy_mate_image, "mate")
     process_data(directory, alt_dir, output_dir, "systemVoice", parse_systemVoice, copy_systemVoice_files, "systemVoice")
     process_data(directory, alt_dir, output_dir, "quest", parse_quest, None, "quest")
     process_data(directory, alt_dir, output_dir, "namePlate", parse_namePlate, copy_namePlate_image, "namePlate")

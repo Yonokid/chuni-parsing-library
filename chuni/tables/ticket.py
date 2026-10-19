@@ -20,7 +20,8 @@ def parse_ticket(file: str) -> dict:
         substances = root.find("substances")
         if substances is not None:
             kinds = [c for c in substances if c.tag not in ("resourceVersion", "type")]
-            src = kinds[int(get_text_element(substances, "type"))]
+            kind = int(get_text_element(substances, "type"))
+            src = kinds[kind] if kind < len(kinds) else substances  # 2.50 type 8 (all-difficulty ticket) has no own element
         else:
             src = root
         for key in ("valueDay", "valueDayRaw", "valueUse", "valueUseRaw", "valueBoost", "valueBoostRaw",

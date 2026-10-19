@@ -20,6 +20,7 @@ SEGMENTS = [
     ("quest", "Quests", "ExploreIcon"),
     ("chargeItem", "Charge Items", "PaymentsIcon"),
     ("duel", "Duels", "SportsMmaIcon"),
+    ("mate", "Mates", "PetsIcon"),
     ("systemVoice", "System Voices", "RecordVoiceOverIcon"),
     ("mapIcon", "Map Icons", "PinDropIcon"),
     ("avatarAccessory", "Avatar Items", "FaceIcon"),

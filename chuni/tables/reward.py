@@ -23,7 +23,7 @@ def parse_reward(file: str) -> dict:
         json_data["gamePoint"] = get_int(sub, "gamePoint/gamePoint")
         if sub.find("skillSeed") is not None:  # 2.00+: skills are granted as seeds (with a count)
             json_data["skillSeedCount"] = get_int(sub, "skillSeed/skillSeedCount")
-        for key in ("skillSeed", "avatarAccessory", "frame", "stage"):  # stage: 2.40
+        for key in ("skillSeed", "avatarAccessory", "frame", "stage", "mate"):  # stage: 2.40, mate: 2.50
             if sub.find(key) is not None:
                 json_data[key] = get_ref(sub, f"{key}/{key}Name")
         if sub.find("symbolChat") is not None:  # 2.20+ (never set in shipped data)

@@ -7,6 +7,7 @@ from chuni.utils import get_int, get_text_element, get_version
 
 
 NAMES = {"yuni": "uni"}  # the file names misspell the character's name
+TITLES = {"uni": "Uni", "navi": "Navi", "exyear": "Ixia"}
 
 
 def _header(root: ET.Element) -> dict:
@@ -55,7 +56,8 @@ parse_emoteTimelineMain = parse_emoteTimelineDiff = _parse_timeline
 def process_emotedata(directory: str, output_dir: str) -> None:
     """emotedata/emotedataNNNN/<chara>_res..._<tex>.emtbytes: unpack each E-mote PSB to JSON + atlas webp.
 
-    Output emotedata/emotedata.json lists {id, name, file}; file is <name>.json next to <name>.webp.
+    Output emotedata/emotedata.json lists {id, name, title, file, textures}; file is <name>.json, textures are the atlas
+    webps its sources point at (<name>.webp, or <name>_<n>.webp for models with several atlases).
     """
     src = os.path.join(directory, "emotedata")
     if not os.path.isdir(src):
@@ -70,11 +72,12 @@ def process_emotedata(directory: str, output_dir: str) -> None:
             name = f.split("_")[0]
             name = NAMES.get(name, name)
             try:
-                export_emote(os.path.join(src, folder, f), out, name)
+                root = export_emote(os.path.join(src, folder, f), out, name)
             except (ValueError, IndexError, KeyError) as e:
                 print(f"Error processing emotedata {folder}/{f}: {e}")
                 continue
-            entries.append({"id": int(folder.removeprefix("emotedata")), "name": name, "file": f"{name}.json", "texture": f"{name}.webp"})
+            textures = [s["texture"]["pixel"] for s in root["source"].values() if isinstance(s, dict) and isinstance(s.get("texture", {}).get("pixel"), str)]
+            entries.append({"id": int(folder.removeprefix("emotedata")), "name": name, "title": TITLES.get(name, name.title()), "file": f"{name}.json", "textures": textures})
     # later Options override earlier ones
     path = os.path.join(out, "emotedata.json")
     old = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else []

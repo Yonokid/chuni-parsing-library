@@ -114,10 +114,10 @@ TROPHY_RARE_TYPE_1_30 = {0: "Normal", 1: "Bronze", 2: "Silver", 3: "Gold", 4: "G
 INT_ENUMS_2_00 = {
     "ticket.type": {0: "Character rank boost", 1: "MASTER play", 2: "ULTIMA play", 3: "WORLD'S END play",
                     4: "Map progress boost", 5: "Character rank limit unlock",  # 5: statues, no banner
-                    7: "EXP stock"},  # 2.10: recycleCharaExp; 6 (playMusicPlus) unused
+                    7: "EXP stock", 8: "All-difficulty play"},  # 8 (2.50): MASTER/ULTIMA/WORLD'S END play at once  # 2.10: recycleCharaExp; 6 (playMusicPlus) unused
     # 9 avatarAccessory, 12 ultimaScore (2.20); 10/11 (frame/symbolChat?) are unused in shipped data
     "reward.type": {**INT_ENUMS["reward.type"], 4: "Skill seed", 9: "Avatar item", 12: "ULTIMA score",
-                    13: "Stage"},  # 13: 2.40
+                    13: "Stage", 14: "Mate"},  # 13: 2.40, 14: 2.50
     "chara.rank.type": {1: "Skill seed", 2: "Flavor text"},
     # Gem icons of CHU_UI_SkillData_00.dds, named by the skills that use each category.
     "skill.category": {0: "None", 1: "Guard", 2: "Support", 3: "Boost", 4: "Combo", 5: "A-Break", 6: "Judge", 7: "Judge+",

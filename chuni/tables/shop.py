@@ -15,7 +15,7 @@ def parse_shop(file: str) -> dict:
         json_data["version"] = get_version(root)
         json_data["name"] = get_text_element(root, "name/str")
         json_data["closeFlag"] = get_text_element(root, "closeFlag") == "true"
-        json_data["explainText"] = get_text_element(root, "explainText")
+        json_data["explainText"] = root.findtext("explainText", "")
         json_data["price"] = int(get_text_element(root, "price"))
         json_data["saleCategoryName"] = get_text_element(root, "saleCategoryName/str")
         json_data["priority"] = int(get_text_element(root, "priority"))
