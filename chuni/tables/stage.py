@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from PIL import Image
 
 from chuni.stage3d.afb import AcroReader, AFRC_Reader, extract_svo_textures
-from chuni.utils import get_text_element, get_version
+from chuni.utils import get_bool, get_int, get_text_element, get_version
 from chuni.stage3d.export import export_stage
 
 
@@ -25,6 +25,12 @@ def parse_stage(file: str) -> dict:
         json_data["notesFieldFile"] = get_text_element(root, "notesFieldFile/path")
         json_data["baseFile"] = get_text_element(root, "baseFile/path")
         json_data["objectFile"] = get_text_element(root, "objectFile/path")
+        if root.find("defaultHave") is not None:  # 2.40+: selectable stages
+            json_data["defaultHave"] = get_bool(root, "defaultHave")
+            json_data["enablePlate"] = get_bool(root, "enablePlate")
+            json_data["disableFlag"] = get_bool(root, "disableFlag")
+            json_data["priority"] = get_int(root, "priority")
+            json_data["image"] = get_text_element(root, "image/path")
 
     return json_data
 
@@ -79,6 +85,14 @@ def copy_stage_files(input: str, stage: dict, output: str) -> None:
                     models.append(glb)
             except Exception as e:
                 print(f"stage3d: {filename}: {e!r}")
+
+    if stage.get("image"):  # 2.40+ selection thumbnail
+        src = os.path.join(input, stage["image"])
+        if os.path.isfile(src):
+            stage["image"] = os.path.splitext(stage["image"])[0] + ".webp"
+            Image.open(src).save(os.path.join(output, stage["image"]))
+        else:
+            stage["image"] = ""
 
     stage["textures"] = textures
     stage["models"] = models

@@ -20,6 +20,8 @@ from chuni.tables.aimeCollab import copy_aimeCollab_image, parse_aimeCollab
 from chuni.tables.achievementPattern import parse_achievementPattern
 from chuni.tables.chargeItem import parse_chargeItem
 from chuni.tables.unlockChallenge import parse_unlockChallenge
+from chuni.tables.emote import (parse_emoteChara, parse_emoteScene, parse_emoteScript, parse_emoteTimelineDiff,
+                                parse_emoteTimelineMain, process_emotedata)
 from chuni.tables.course import embed_course_rules, parse_course
 from chuni.tables.courseRule import parse_courseRule
 from chuni.tables.duel import parse_duel
@@ -252,6 +254,10 @@ def parse_AXXX_directory(directory: str, output_dir: str, alt_dir=None) -> None:
     process_data(directory, alt_dir, output_dir, "cmission", parse_cmission, None, "cmission")
     process_data(directory, alt_dir, output_dir, "cmissionInfo", parse_cmissionInfo, None, "cmissionInfo")
     process_data(directory, alt_dir, output_dir, "unlockChallenge", parse_unlockChallenge, None, "unlockChallenge")
+    for emote_type, emote_parse in (("emoteChara", parse_emoteChara), ("emoteScene", parse_emoteScene), ("emoteScript", parse_emoteScript),
+                                    ("emoteTimelineMain", parse_emoteTimelineMain), ("emoteTimelineDiff", parse_emoteTimelineDiff)):
+        process_data(directory, alt_dir, output_dir, emote_type, emote_parse, None, emote_type)
+    process_emotedata(directory, output_dir)
     process_data(directory, alt_dir, output_dir, "aimeCollab", parse_aimeCollab, copy_aimeCollab_image, "aimeCollab")
     process_data(directory, alt_dir, output_dir, "course", parse_course, None, "course")
     process_data(directory, alt_dir, output_dir, "courseRule", parse_courseRule, None, "courseRule")

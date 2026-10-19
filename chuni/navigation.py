@@ -37,6 +37,7 @@ SEGMENTS = [
     ("teamPresentPreset", "Team Present Sets", "PlaylistAddCheckIcon"),
     ("cmission", "Missions", "AssignmentIcon"),
     ("unlockChallenge", "Unlock Challenges", "LockOpenIcon"),
+    ("emoteScript", "Emote Scripts", "ChatIcon"),
 ]
 
 # segment -> segment whose presence means it was removed (output is a merged snapshot, so old json lingers)
