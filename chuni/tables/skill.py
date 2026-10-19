@@ -28,6 +28,7 @@ def _timing(el: ET.Element) -> dict:
         "useSection": get_bool(el, "useSection"),
         "section": _section(safe_find(el, "section")),
         "missNum": get_int(el, "missNum"),
+        **({"jhComboNum": get_int(el, "jhComboNum")} if el.find("jhComboNum") is not None else {}),  # 2.45+
         "comboNum": get_int(el, "comboNum"),
         "chainNum": get_int(el, "chainNum"),
         "chainCut": get_bool(el, "chainCut"),

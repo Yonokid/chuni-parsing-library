@@ -6,13 +6,19 @@ from chuni.emote.psb import export_emote
 from chuni.utils import get_int, get_text_element, get_version
 
 
+NAMES = {"yuni": "uni"}  # the file names misspell the character's name
+
+
 def _header(root: ET.Element) -> dict:
     return {"id": get_int(root, "name/id"), "version": get_version(root), "name": get_text_element(root, "name/str")}
 
 
 def parse_emoteChara(file: str) -> dict:
     root = ET.parse(file).getroot()
-    return {**_header(root), **{k: get_int(root, k) for k in ("emoteDataId", "texSizeX", "texSizeY", "posX", "posY", "scaleX10000")}}
+    json_data = {**_header(root), **{k: get_int(root, k) for k in ("emoteDataId", "texSizeX", "texSizeY", "posX", "posY", "scaleX10000")}}
+    if root.find("dialogName") is not None:  # 2.45+: speaker name shown in the dialog
+        json_data["dialogName"] = get_text_element(root, "dialogName")
+    return json_data
 
 
 def parse_emoteScene(file: str) -> dict:
@@ -30,7 +36,7 @@ def parse_emoteScript(file: str) -> dict:
         "main": [get_int(root, f"emoteTimeline{i}MainId{c}") for c in (0, 1)],
         "diff": [get_int(root, f"emoteTimeline{i}DiffId{c}") for c in (0, 1)],
     } for i in range(8)]
-    for key in ("msecDelay", "cue", "emoteScriptOffset", "emoteScriptButton", "isChangeDialog"):
+    for key in ("msecDelay", "cue", "emoteScriptOffset", "emoteScriptButton", "isChangeDialog", "dialogCharaId"):
         if root.find(key) is not None:
             json_data[key] = get_int(root, key)
     if root.find("textDialog") is not None:
@@ -62,6 +68,7 @@ def process_emotedata(directory: str, output_dir: str) -> None:
             if not f.endswith(".emtbytes"):
                 continue
             name = f.split("_")[0]
+            name = NAMES.get(name, name)
             try:
                 export_emote(os.path.join(src, folder, f), out, name)
             except (ValueError, IndexError, KeyError) as e:

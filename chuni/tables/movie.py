@@ -28,7 +28,8 @@ ENC_KEY = "0x0074FF1FCE264700"
 def copy_movie(input: str, movie, output: str) -> str:
     key = ["-k", ENC_KEY] if movie["filename"].endswith(".enc") else []
     subprocess.run(["wannacri", "extractusm", f"{input}", *key])
-    extracted_path = os.path.join("output", movie["filename"])
+    # wannacri lowercases the folder name (MOVIE_Melodiniq.enc -> movie_melodiniq.enc)
+    extracted_path = os.path.join("output", next(d for d in os.listdir("output") if d.lower() == movie["filename"].lower()))
     audio_file = ''
     video_file = ''
     for file in os.listdir(os.path.join(extracted_path, "audios")):

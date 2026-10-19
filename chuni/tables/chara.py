@@ -30,6 +30,8 @@ def parse_chara(file: str) -> dict:
         json_data["defaultImage"] = get_ref(root, "defaultImages")
         json_data["priority"] = get_int(root, "priority")
         json_data["conditions"] = parse_conditions(root)
+        if root.find("ranking") is not None:  # 2.45+
+            json_data["ranking"] = get_bool(root, "ranking")
 
         add_images = []
         for i in range(1, 10):  # 3 before 2.00
