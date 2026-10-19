@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
+from chuni.emote.psb import export_emote
 from chuni.utils import get_bool, get_int, get_ref, get_text_element, get_version
 
 
@@ -35,3 +36,7 @@ def copy_mate_image(input: str, mate: dict, output: str) -> None:
     img = Image.open(os.path.join(input, mate["imageFile"]))
     mate["image"] = f"{os.path.splitext(mate['imageFile'])[0]}.webp"
     img.save(os.path.join(output, mate["image"]))
+    # E-mote model: <emote>.json + atlas webp(s) next to the portrait; the viewer plays the timelines the actions name
+    name = os.path.splitext(mate["emoteFile"])[0]
+    export_emote(os.path.join(input, mate["emoteFile"]), output, name)
+    mate["emote"] = name
