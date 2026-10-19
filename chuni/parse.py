@@ -223,6 +223,9 @@ def process_data(directory: str, alt_dir, output_dir: str, data_type: str, parse
         for song in new_data:
             have = {c.get("worldsEndId") for c in song["charts"]}
             song["charts"] += [c for c in old_by_id.get(song["id"], {}).get("charts", []) if c.get("worldsEndId") not in have | {None}]
+    if data_type == "rightsInfo":  # 2.50 A001 ships empty-name stubs of entries A000 names: keep the named one
+        named = {r["id"] for r in existing_data if r["name"]}
+        new_data = [r for r in new_data if r["name"] or r["id"] not in named]
     combined_data = combine_unique_keys(existing_data, new_data, "id")
     if data_type == "music":
         combined_data = merge_worlds_end(combined_data)
