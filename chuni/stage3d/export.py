@@ -786,6 +786,11 @@ class _StageExporter:
                 self.meshes[key] = len(g["meshes"]) - 1
             if any("JOINTS_0" in p["attributes"] for p in prims):
                 self.skeletons[svo_name] = _skeleton(objs)
+                for p in prims:  # rigid shapes of a skinned svo: bind to joint 0 (three's SkinnedMesh needs weights on every primitive)
+                    if "JOINTS_0" not in p["attributes"]:
+                        count = self.glb.gltf["accessors"][p["attributes"]["POSITION"]]["count"]
+                        p["attributes"]["JOINTS_0"] = self.glb.accessor(bytes(count * 4), 5121, count, "VEC4", 34962)
+                        p["attributes"]["WEIGHTS_0"] = self.glb.accessor(struct.pack("<4f", 1, 0, 0, 0) * count, 5126, count, "VEC4", 34962)
 
         return self.meshes[key]
 
